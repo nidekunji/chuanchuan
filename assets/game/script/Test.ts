@@ -623,6 +623,16 @@ public async handlePushAndMatch(moveResult: { from: { x: number, y: number }, to
             this.currentState = GameState.Idle;
         }
     }
+    private findGemPosition(gem: Node): { x: number, y: number } | null {
+        for (let y = 0; y < this.boardParams.rows; y++) {
+            for (let x = 0; x < this.boardParams.columns; x++) {
+                if (this.board[y][x] === gem) {
+                    return { x, y };
+                }
+            }
+        }
+        return null;
+    }
     public async onGemClicked(event: any) {
         try {
             if (this.currentState === GameState.Processing || this.currentState === GameState.Animating) {
@@ -1066,9 +1076,20 @@ public countEmptySlots(gems: { x: number, y: number }[], direction: { dx: number
         }
     }
     public findFirstValidMove(): {from: {x: number, y: number}, to: {x: number, y: number}} | null {
+        // First, check for any existing direct matches that can be clicked
         for (let y = 0; y < this.boardParams.rows; y++) {
             for (let x = 0; x < this.boardParams.columns; x++) {
-                // 假设可以向四个方向移动
+                const matchCenter = this.canDirectlyEliminate(x, y);
+                if (matchCenter) {
+                    console.log(`Direct elimination available at (${matchCenter.x}, ${matchCenter.y})`);
+                    return {from: matchCenter, to: matchCenter}; // Return the center position for direct click
+                }
+            }
+        }
+    
+        // If no direct matches, check for moves that can create a match
+        for (let y = 0; y < this.boardParams.rows; y++) {
+            for (let x = 0; x < this.boardParams.columns; x++) {
                 const directions = [
                     {dx: 1, dy: 0},  // 右
                     {dx: -1, dy: 0}, // 左
@@ -1078,9 +1099,8 @@ public countEmptySlots(gems: { x: number, y: number }[], direction: { dx: number
                 for (const direction of directions) {
                     const newX = x + direction.dx;
                     const newY = y + direction.dy;
-                    if (this.isValidPosition(newX, newY) && this.gems[newY][newX] === 0) { // 检查位置是否有效且目标位置为空
+                    if (this.isValidPosition(newX, newY) && this.gems[newY][newX] === 0) {
                         const moveResult = [{from: {x, y}, to: {x: newX, y: newY}}];
-
                         if (this.checkPushWillMatch(moveResult) == 1) {
                             const gemType = this.gems[y][x];
                             console.error(`Move from (${x}, ${y}) to (${newX}, ${newY}) with gem type ${gemType} can form a match.`);
@@ -1093,16 +1113,21 @@ public countEmptySlots(gems: { x: number, y: number }[], direction: { dx: number
         console.error("No valid move found that can form a match.");
         return null; // 如果没有找到任何可以消除的移动，返回null
     }
-    private findGemPosition(gem: Node): { x: number, y: number } | null {
-        for (let y = 0; y < this.boardParams.rows; y++) {
-            for (let x = 0; x < this.boardParams.columns; x++) {
-                if (this.board[y][x] === gem) {
-                    return { x, y };
-                }
-            }
+    private canDirectlyEliminate(x: number, y: number): {x: number, y: number} | null {
+        // Check horizontally and vertically for three consecutive same-type gems
+        const gemType = this.gems[y][x];
+        // Horizontal check
+        if (x < this.boardParams.columns - 2 &&
+            gemType === this.gems[y][x + 1] && gemType === this.gems[y][x + 2]) {
+            return {x: x + 1, y: y}; // Return the center position of the horizontal match
+        }
+        // Vertical check
+        if (y < this.boardParams.rows - 2 &&
+            gemType === this.gems[y + 1][x] && gemType === this.gems[y + 2][x]) {
+            return {x: x, y: y + 1}; // Return the center position of the vertical match
         }
         return null;
-    }
+    } 
 
     private saveGame() {
         const gemData: IGemData[] = [];
