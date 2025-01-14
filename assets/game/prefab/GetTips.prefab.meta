@@ -1,0 +1,13 @@
+{
+  "ver": "1.1.49",
+  "importer": "prefab",
+  "imported": true,
+  "uuid": "a61261d0-4f12-42c8-ae9c-55df063bc4be",
+  "files": [
+    ".json"
+  ],
+  "subMetas": {},
+  "userData": {
+    "syncNodeName": "GetTips"
+  }
+}
