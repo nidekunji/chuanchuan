@@ -80,6 +80,7 @@ export const uiLoadingConfigs: { [key: string]: UILoadConfig } = {
 export const LocalCacheKeys = {
     BackgroundMusic: "backgroundMusic",
     SoundEffects: "soundEffects",
+    ShakeEffect: "shakeEffect",
     GameSave: "gameSave",//游戏保存
     IsNewUser: "isNewUser",//是否是新手
     Level: "level",//等级
