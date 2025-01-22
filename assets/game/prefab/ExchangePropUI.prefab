@@ -278,7 +278,7 @@
     "_lpos": {
       "__type__": "cc.Vec3",
       "x": 0,
-      "y": 2.0534999999999854,
+      "y": 0,
       "z": 0
     },
     "_lrot": {
@@ -1393,7 +1393,7 @@
     },
     "component": "",
     "_componentId": "774b6i0GYpHxKISHgFKQZxl",
-    "handler": "onClickExit",
+    "handler": "onClickVideo",
     "customEventData": ""
   },
   {
@@ -2251,7 +2251,7 @@
     "_top": 0,
     "_bottom": 0,
     "_horizontalCenter": 0,
-    "_verticalCenter": 2.0534999999999854,
+    "_verticalCenter": 0,
     "_isAbsLeft": true,
     "_isAbsRight": true,
     "_isAbsTop": true,

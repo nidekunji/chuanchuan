@@ -2,7 +2,7 @@
  * @Author: Aina
  * @Date: 2025-01-10 04:25:09
  * @LastEditors: Aina
- * @LastEditTime: 2025-01-12 03:37:56
+ * @LastEditTime: 2025-01-19 14:33:21
  * @FilePath: /chuanchuan/assets/game/scripts/CustomerMove.ts
  * @Description: 
  * 
@@ -120,6 +120,9 @@ export class CustomerMove extends Component {
                 callback?.();
             })
             .start(); // 开始执行序列
+    }
+    public stopAllActions() {
+        Tween.stopAllByTarget(this.node);
     }
 
     calculateScaleDirection(fromPosition: Vec3, toPosition: Vec3): Vec3 {

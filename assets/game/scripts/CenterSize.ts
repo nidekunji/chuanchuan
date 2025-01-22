@@ -2,7 +2,7 @@
  * @Author: Aina
  * @Date: 2025-01-09 23:17:17
  * @LastEditors: Aina
- * @LastEditTime: 2025-01-09 23:20:57
+ * @LastEditTime: 2025-01-22 18:31:44
  * @FilePath: /chuanchuan/assets/game/scripts/CenterSize.ts
  * @Description: 
  * 
@@ -15,9 +15,12 @@ const { ccclass, property } = _decorator;
 export class CenterSize extends Component {
     start() {
         const windowSize = view.getVisibleSize();
-        console.log("windowSize", windowSize.height);
-        if (windowSize.height < 854) {
-            this.node.scale = new Vec3(0.8, 0.8, 1);
+        const aspectRatio = windowSize.width / windowSize.height;
+        
+        // 根据宽高比动态计算缩放
+        if (aspectRatio < 0.5625) { // 16:9 的宽高比约为 0.5625
+            const scale = windowSize.height / (windowSize.width * 1.778); // 1.778 约等于 16/9
+            this.node.scale = new Vec3(scale, scale, 1);
         }
     }
 

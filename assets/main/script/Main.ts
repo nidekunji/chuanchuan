@@ -2,13 +2,13 @@
  * @Author: Aina
  * @Date: 2024-12-19 01:17:40
  * @LastEditors: Aina
- * @LastEditTime: 2025-01-14 03:56:38
+ * @LastEditTime: 2025-01-19 17:02:23
  * @FilePath: /chuanchuan/assets/main/script/Main.ts
  * @Description: 
  * 
  * Copyright (c) 2024 by ${git_name_email}, All Rights Reserved. 
  */
-import { _decorator, Component, tween, Vec3, Node, director, assetManager, Director, game } from 'cc';
+import { _decorator, Component, tween, Vec3, Node, director, assetManager, Director, game, UITransform } from 'cc';
 const { ccclass, property } = _decorator;
 import { LocalCacheKeys, uiLoadingConfigs } from '../../app/config/GameConfig';
 import { LocalStorageManager } from '../../common/scripts/LocalStorageManager';
@@ -24,6 +24,9 @@ export class HomeButtonAnimation extends Component {
     @property(Node)
     rankNode: Node = null;
 
+    @property(Node)
+    rankContent: Node = null
+
 
     private _buttonTween = null; // 保存 tween 引用，便于停止
     private _sceneName: string = "Game"
@@ -36,18 +39,40 @@ export class HomeButtonAnimation extends Component {
             director.addPersistRootNode(audioManagerNode);
             this.checkAndPlayBackgroundMusic();
         }
+        LocalStorageManager.clearAllCache();
         sdk.p.showBanner(0, SDKDir.BOTTOM_MID)
-
+    
         sdk.p.getUserInfo((r: ResultState, data: any) => {
-            this.rankNode.active = r == ResultState.YES;
+            // 如果用户没有授权
+            // console.log("r", ResultState.NO)
             if (r == ResultState.NO) {
+                console.log("r", ResultState.NO)
+                // 获取 rankNode 的位置和尺寸
+                let rankNodePosition = this.rankNode.getWorldPosition(); // 获取 rankNode 的世界坐标
+                let rankNodeSize = this.rankNode.getComponent(UITransform).contentSize; // 获取 rank
                 sdk.p.createInfoButton({
-                    text: "排行榜", callback: (r: ResultState, data: any) => {
-                        this.onRankBtnClick();
-                    }
+                                text: "", callback: (r: ResultState, data: any) => {
+                                    this.onRankBtnClick();
+                                },
+                                right: rankNodePosition.x,
+                                top: rankNodePosition.y,
+                                width: rankNodeSize.width,
+                                height: rankNodeSize.height
                 })
             }
-        })
+        });
+        
+
+        // sdk.p.getUserInfo((r: ResultState, data: any) => {
+        //  //   this.rankNode.active = r == ResultState.YES;
+        //     if (r == ResultState.NO) {
+        //         sdk.p.createInfoButton({
+        //             text: "排行榜", callback: (r: ResultState, data: any) => {
+        //                 this.onRankBtnClick();
+        //             }
+        //         })
+        //     }
+        // })
 
 
     }
@@ -133,7 +158,7 @@ export class HomeButtonAnimation extends Component {
 
     showRank() {
         const uiManager = UIManager.instance;
-        uiManager.openUI(uiLoadingConfigs.RankUIUrl);
+        UIManager.instance.openUI(uiLoadingConfigs.RankUIUrl);
     }
 
     onRankBtnClick() {

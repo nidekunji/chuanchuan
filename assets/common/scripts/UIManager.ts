@@ -1,5 +1,6 @@
 import { _decorator, Component, Node, instantiate, tween, Vec3, AssetManager, resources, error, assetManager, UIOpacity, director } from 'cc';
 import { UILoadConfig } from '../../core/scripts/define/Types';
+import { GameBoard } from '../../game/script/Test';
 const { ccclass, property } = _decorator;
 
 

@@ -2,7 +2,7 @@
  * @Author: Aina
  * @Date: 2025-01-07 02:16:15
  * @LastEditors: Aina
- * @LastEditTime: 2025-01-11 21:57:54
+ * @LastEditTime: 2025-01-23 00:15:03
  * @FilePath: /chuanchuan/assets/game/scripts/FoodItem.ts
  * @Description: 
  * 
@@ -33,29 +33,45 @@ export class FoodItem extends Component {
         this.updateFoodLabel(count);   
         this.node.active = true;
         if (this.foodParticle) {
-            this.foodParticle.resetSystem(); // This will play the particle system once
+            this.foodParticle.resetSystem();
         }
-    
         this.node.setScale(new Vec3(0, 0, 0)); 
-        // 检查 node 是否有 UIOpacity 组件，如果没有则添加
         let uiOpacity = this.node.getComponent(UIOpacity);
         if (!uiOpacity) {
             uiOpacity = this.node.addComponent(UIOpacity);
         }
-        uiOpacity.opacity = 255; // 设置透明度为 0
+        uiOpacity.opacity = 255;
+        
         Tween.stopAllByTarget(this.node);
+        // 更夸张的果冻弹性效果
         tween(this.node)
-            .to(0.3, { scale: new Vec3(1, 1, 1) }, { easing: 'quadOut' }) 
-            .start();
+        .to(0.1, { scale: new Vec3(0.8, 0.8, 0.8) }, { easing: 'sineOut' })     // 开始较小
+        .to(0.2, { scale: new Vec3(3, 3, 3) }, { easing: 'sineOut' })     // 弹性放大
+        .to(0.1, { scale: new Vec3(0.9, 0.9, 0.9) }, { easing: 'sineIn' })     // 稍微收缩
+        .to(0.2, { scale: new Vec3(1.1, 1.1, 1.1) }, { easing: 'sineOut' })    // 果冻弹出效果
+        .to(0.1, { scale: new Vec3(1, 1, 1) }, { easing: 'sineInOut' })         // 平滑归位
+        .start();
+
+        // 移动动画
         tween(this.node)
-            .delay(0.4) 
-            .to(0.3, { position: target}) 
+            .delay(0.7)  // 延迟时间也相应增加以匹配新的动画时长
+            .to(0.4, { position: target })
             .call(() => {
                 callback?.();
             })
             .start();
     }
-    public blinkAndFadeOut() {
+    public stopAllAnimations() {
+        // Stop all tweens on the node
+        Tween.stopAllByTarget(this.node);
+        
+        // Stop tweens on UIOpacity component if it exists
+        const uiOpacity = this.node.getComponent(UIOpacity);
+        if (uiOpacity) {
+            Tween.stopAllByTarget(uiOpacity);
+        }
+    }
+    public blinkAndFadeOut(callback: () => void) {
         let uiOpacity = this.node.getComponent(UIOpacity);
         if (!uiOpacity) {
             uiOpacity = this.node.addComponent(UIOpacity);
@@ -76,6 +92,7 @@ export class FoodItem extends Component {
             )
             .call(() => {
                 this.hideFoodItem(); // Hide the food item after animation
+                callback?.();
             })
             .start();
     }

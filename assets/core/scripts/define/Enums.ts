@@ -146,7 +146,8 @@ export enum GameState {
     Shuffling = 'Shuffling',
     Animating = 'Animating',
     Pushing = 'Pushing',
-    Swiping = 'Swiping'
+    Swiping = 'Swiping',
+    Exchanging = "Exchanging"
 }
 // 添加一个枚举类型用于客户状态
 export enum CustomerState {
@@ -157,5 +158,6 @@ export enum CustomerState {
     JoiningQueue,               // 加入队列
     MovingToWaitingArea,        // 移动到等待区
     IsQueueing,                 // 排队中
-    WaitingEat,                 // 食物正在飞过来等待吃
+    WaitingEat,                 // 食物放入等待区等待被吃
+    EatingWatingEat,            // 吃等待区的食物
 }

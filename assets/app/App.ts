@@ -2,7 +2,7 @@
  * @Author: Aina
  * @Date: 2023-12-23 15:55:18
  * @LastEditors: Aina
- * @LastEditTime: 2025-01-12 08:38:29
+ * @LastEditTime: 2025-01-23 00:24:00
  * @FilePath: /chuanchuan/assets/app/App.ts
  * @Description: 
  * 
@@ -87,7 +87,7 @@ export class App extends Component {
         }
     }
     onLoad() { 
-        this.loadBundles(["main2", "setting", "game", "sceneRes"]);
+        this.loadBundles(["main2", "setting", "game", "sceneRes", "setting"]);
         let loading = this.node.getChildByName("Loading")!
         let ratio = loading.getChildByName("Ratio")!
        

@@ -70,20 +70,24 @@ export class wx_sdk implements isdk {
         })
     }
 
-    createInfoButton(param: { text: string, callback: (r: ResultState, data: any) => void }) {
+    createInfoButton(param: { text: string, callback: (r: ResultState, data: any) => void,right?: number,
+        top?: number,
+        width?: number,
+        height?: number
+    }) {
         let sdk = this.sdk;
         // 否则，先通过 wx.createUserInfoButton 接口发起授权
         let button = sdk.createUserInfoButton({
             type: 'text',
-            text: param.text,
+            text: '',  // 可以不设置文字
             style: {
-                left: 10,
-                top: 76,
-                width: 200,
-                height: 40,
+                right: param.right || 10,
+                top: param.top || 76,
+                width: param.width || 155,
+                height: param.height || 153,
                 lineHeight: 40,
-                backgroundColor: '#ff0000',
-                color: '#ffffff',
+                backgroundColor: 'transparent',  // 背景透明
+                color: 'transparent',  // 文本颜色透明
                 textAlign: 'center',
                 fontSize: 16,
                 borderRadius: 4
@@ -93,6 +97,7 @@ export class wx_sdk implements isdk {
             // 用户同意授权后回调，通过回调可获取用户头像昵称信息
             console.log('createInfoButton onTap ', res)
             param.callback(ResultState.YES, res)
+            button.destroy(); 
         })
     }
 

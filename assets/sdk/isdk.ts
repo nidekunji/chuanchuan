@@ -13,7 +13,7 @@ export interface isdk {
         fail: Function
     }): void;
 
-    createInfoButton(param: { text: string, callback: (r: ResultState, data: any) => void }): void
+    createInfoButton(param: { text: string,  callback: (r: ResultState, data: any) => void, right?: number, top?: number, width?: number, height?: number }): void
 
     getUserInfo(callback: (r: ResultState, res: any) => void): void
 

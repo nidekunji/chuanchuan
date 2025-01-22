@@ -109,7 +109,7 @@ export class Gem extends Component {
     setWorldPosition(x: number, y: number) {
         this.targetX = x;
         this.targetY = y;
-        this.node.setPosition(new Vec3(x, y, 0));
+      //  this.node.setPosition(new Vec3(x, y, 0));
     }
 
     getWorldPosition(): { x: number, y: number } {

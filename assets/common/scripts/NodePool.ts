@@ -1,8 +1,8 @@
 /*
  * @Author: Aina
- * @Date: 2025-01-06 17:38:53
+ * @Date: 2025-01-14 11:28:04
  * @LastEditors: Aina
- * @LastEditTime: 2025-01-12 08:30:09
+ * @LastEditTime: 2025-01-20 16:06:04
  * @FilePath: /chuanchuan/assets/common/scripts/NodePool.ts
  * @Description: 
  * 
@@ -29,22 +29,35 @@ export class NodePool {
             this.pools.set(prefab, pool);
         }
     }
+
     // 获取节点
     acquire(prefab: Prefab): Node {
         this.initializePool(prefab); // 确保池已初始化
         const pool = this.pools.get(prefab);
-        return pool.length > 0 ? pool.pop() : instantiate(prefab);
+        if (pool.length > 0) {
+            let node = pool.pop();
+            node.active = true; // 重新激活节点
+            return node;
+        } else {
+            console.warn("No nodes available in pool; instantiating new.");
+            return instantiate(prefab);
+        }
     }
 
     // 释放节点
     release(prefab: Prefab, node: Node): void {
         this.initializePool(prefab); // 确保池已初始化
         const pool = this.pools.get(prefab);
-        // 重置节点状态（可选）
-        node.setPosition(0, 0, 0);
-        node.setScale(1, 1, 1);
-        node.active = false;
-        pool.push(node);
+
+        if (pool.indexOf(node) === -1) {
+            node.removeFromParent(); // 确保节点已从其父节点中移除
+            node.setPosition(0, 0, 0);
+            node.setScale(1, 1, 1);
+            node.active = false;
+            pool.push(node);
+        } else {
+            console.warn("Node is already in the pool.");
+        }
     }
 
     // 获取池中节点数量
@@ -52,5 +65,29 @@ export class NodePool {
         this.initializePool(prefab); // 确保池已初始化
         const pool = this.pools.get(prefab);
         return pool ? pool.length : 0;
+    }
+
+    // 清空指定预制体的节点池
+    clear(prefab?: Prefab): void {
+        if (prefab) {
+            // 清空指定预制体的节点池
+            if (this.pools.has(prefab)) {
+                const pool = this.pools.get(prefab);
+                pool.forEach(node => {
+                    node.destroy();
+                });
+                pool.length = 0;
+                this.pools.delete(prefab);
+            }
+        } else {
+            // 清空所有节点池
+            this.pools.forEach((pool, prefab) => {
+                pool.forEach(node => {
+                    node.destroy();
+                });
+                pool.length = 0;
+            });
+            this.pools.clear();
+        }
     }
 }

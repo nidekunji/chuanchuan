@@ -2,7 +2,7 @@
  * @Author: Aina
  * @Date: 2025-01-14 04:28:04
  * @LastEditors: Aina
- * @LastEditTime: 2025-01-15 03:30:42
+ * @LastEditTime: 2025-01-23 03:06:53
  * @FilePath: /chuanchuan/assets/setting/script/SettingUI.ts
  * @Description: 
  * 
@@ -14,6 +14,7 @@ import { AudioManager } from '../../common/scripts/AudioManager';
 import { LocalStorageManager } from '../../common/scripts/LocalStorageManager';
 import { UIManager } from '../../common/scripts/UIManager';
 import { EventDispatcher } from '../../common/scripts/EventDispatcher';
+// import { GameBoard } from '../../game/script/Test';
 const { ccclass, property } = _decorator;
 
 @ccclass('SettingUI')
@@ -33,6 +34,7 @@ export class SettingUI extends Component {
 
     private eventDispatcher: EventDispatcher;
     
+  //  private GameBoard: GameBoard;
     
 
     onLoad() {
@@ -43,14 +45,25 @@ export class SettingUI extends Component {
          this.isBackgroundMusicOn = LocalStorageManager.getItem(LocalCacheKeys.BackgroundMusic) === 'true';
          this.isSoundEffectsOn = LocalStorageManager.getItem(LocalCacheKeys.SoundEffects) === 'true';
          this.isVibrateSwitch = LocalStorageManager.getItem(LocalCacheKeys.ShakeEffect) === 'true';
-         console.log(this.isBackgroundMusicOn, "this.isBackgroundMusicOn")
-         console.log(this.isSoundEffectsOn, "this.isSoundEffectsOn")
-         this.eventDispatcher = EventDispatcher.getInstance();
+        //  console.log(this.isBackgroundMusicOn, "this.isBackgroundMusicOn")
+        //  console.log(this.isSoundEffectsOn, "this.isSoundEffectsOn")
+        // this.eventDispatcher = EventDispatcher.getInstance();
          this.updateView();
+
+         const canvasNode = this.node.scene.getChildByName('Canvas'); // Assuming 'Canvas' is the name of the canvas node
+         if (canvasNode) {
+           //  this.GameBoard = canvasNode.getComponent(GameBoard);
+         } else {
+             console.error("Canvas node not found");
+         }
     }
     onClickReset() {
         UIManager.instance.closeUI(uiLoadingConfigs.SettingUrl.name);
-        this.eventDispatcher.emit('restartGame');
+        // if (this.GameBoard) {
+        //   //  this.GameBoard.resetGame(); // Call the resetGame method on GameBoard
+        // } else {
+        //     console.error('GameBoard is not initialized');
+        // }
     }
     abandonChallenge() {
         // Close the current UI

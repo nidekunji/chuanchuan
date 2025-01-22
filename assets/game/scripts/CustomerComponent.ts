@@ -2,7 +2,7 @@
  * @Author: Aina
  * @Date: 2025-01-10 04:54:34
  * @LastEditors: Aina
- * @LastEditTime: 2025-01-13 03:43:16
+ * @LastEditTime: 2025-01-22 23:50:57
  * @FilePath: /chuanchuan/assets/game/scripts/CustomerComponent.ts
  * @Description: 
  * 
@@ -37,6 +37,9 @@ export class CustomerComponent extends Component {
     @property(Sprite)
     private foodSprite: Sprite = null;
 
+    @property(Node)
+    private finishNode: Node = null;
+
     customerType: number = 0; // 顾客需要的宝石类型
     tableId: number = 0; // 桌子id
     isWaiting: boolean = false; // 是否在等待区
@@ -57,6 +60,21 @@ export class CustomerComponent extends Component {
 
         this.foodSprite = this.foodNode.getChildByName('sprite').getComponent(Sprite)!;
     }
+    stopAllMovements(){
+         // Stop food UI animations
+        Tween.stopAllByTarget(this.foodNode);
+        
+        // Reset food node scale and position
+        if (this.foodNode) {
+            this.foodNode.scale = new Vec3(this.foodScaleX, 1, 1);
+            this.foodNode.position = new Vec3(0, 0, 0);
+        }
+
+        // Stop customer movement if it exists
+        if (this.movement) {
+            this.movement.stopAllActions();
+        }
+    }
     /**
      * 
      * @param customerType 
@@ -68,15 +86,16 @@ export class CustomerComponent extends Component {
         this.tableId = tableId;
         this.isWaiting = isWaiting;
         this.node.active = false;
-        if (this.frameAnimation) {
-            this.frameAnimation.init(this.customerType);
-        }
+        this.finishNode.active = false;
+        
         this.node.active = true;
         if (isWaiting) {
-           // this.updateState(CustomerState.Idle);   
             this.node.setPosition(waitingPositions[tableId]);
+            if (this.frameAnimation) {
+                this.frameAnimation.init(this.customerType);
+            }
         } else {
-           // this.updateState(CustomerState.JoiningQueue);
+            this.hideFoodUI();
             this.node.setPosition(queuePositions[tableId]);
         }
     }
@@ -102,8 +121,10 @@ export class CustomerComponent extends Component {
         this.showFoodUIAnim();
     }
     public hideFoodUI(){
+       // console.error('顾客隐藏食物UI========', this.currentState === CustomerState.JoiningQueue);
         Tween.stopAllByTarget(this.foodNode);
         this.foodNode.active = false;
+        this.finishNode.active = false;
     }
     public showFoodUIAnim(){
         this.foodNode.active = true;
@@ -115,11 +136,6 @@ export class CustomerComponent extends Component {
         .to(time, { scale: new Vec3(1.2*randomScaleX, 1.2, 1.2) })
         // 缩小
         .to(time, { scale: new Vec3(0.8*randomScaleX, 0.8, 0.8) })
-        // 抖动
-        .by(time, { position: new Vec3(5*randomScaleX, 0, 0) })
-        .by(time, { position: new Vec3(-10*randomScaleX, 0, 0) })
-        .by(time, { position: new Vec3(10*randomScaleX, 0, 0) })
-        .by(time, { position: new Vec3(-5*randomScaleX, 0, 0) })
         // 回到原始尺寸
         .to(time, { scale: new Vec3(1*randomScaleX, 1, 1) })
         // 循环
@@ -147,6 +163,9 @@ export class CustomerComponent extends Component {
     // 添加方法来处理状态转换并相应地调用移动方法
 private handleStateChange() {
     switch (this.currentState) {
+        case CustomerState.None:
+            this.hideFoodUI();
+            break;
         case CustomerState.Idle:
             this.setFoodUI();
             break;
@@ -160,8 +179,9 @@ private handleStateChange() {
             this.hideFoodUI();
             break;
     }
-    }
+}
     public updateState(state: CustomerState) {
+      //  console.error('顾客状态更新========', state);
         this.currentState = state;
         if (state === CustomerState.Idle) {
             this.isWaiting = true;

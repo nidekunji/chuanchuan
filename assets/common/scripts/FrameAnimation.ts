@@ -2,13 +2,13 @@
  * @Author: Aina
  * @Date: 2025-01-03 21:37:19
  * @LastEditors: Aina
- * @LastEditTime: 2025-01-13 03:43:36
+ * @LastEditTime: 2025-01-22 22:48:02
  * @FilePath: /chuanchuan/assets/common/scripts/FrameAnimation.ts
  * @Description: 
  * 
  * Copyright (c) 2025 by ${git_name_email}, All Rights Reserved. 
  */
-import { _decorator, Component, Sprite, SpriteFrame, Node, UITransform, Vec3 } from 'cc';
+import { _decorator, Component, Sprite, SpriteFrame, Node, UITransform, Vec3, CCFloat } from 'cc';
 const { ccclass, property } = _decorator;
 
 @ccclass('FrameAnimation')
@@ -16,8 +16,8 @@ export class FrameAnimation extends Component {
     @property([SpriteFrame])
     frames: SpriteFrame[] = [];
 
-    @property(Number)
-    frameRate: number = 1; // frames per second
+    @property({type: CCFloat})
+    _frameRate: number = 1; // frames per second
 
     private currentFrame: number = 0;
     private elapsedTime: number = 0;
@@ -32,7 +32,7 @@ export class FrameAnimation extends Component {
     }
     init(type: number, frameRate: number = 1, scaleX: number = 1) {
         if (frameRate !== undefined) {
-            this.frameRate = frameRate;
+            this._frameRate = frameRate;
         }
         this.customerId = type;
        
@@ -51,8 +51,7 @@ export class FrameAnimation extends Component {
     update(dt: number) {
         if (this.frames.length === 0) return;
         this.elapsedTime += dt;
-        const frameDuration = 1 / this.frameRate;
-    
+        const frameDuration = 1 / this._frameRate;
         if (this.elapsedTime >= frameDuration) {
             this.elapsedTime -= frameDuration;
             this.currentFrame = (this.currentFrame + 1) % (this.endFrameId - this.startFrameId + 1) + this.startFrameId;

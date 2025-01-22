@@ -64,17 +64,21 @@ export const uiLoadingConfigs: { [key: string]: UILoadConfig } = {
         bundle: "game",
         path: "prefab/ExchangePropUI"
     },
-    RandomPropUrl: {
-        name: "RandomPropUI",
+    ShuttlePropUrl: {
+        name: "ShuttlePropUI",
         bundle: "game",
-        path: "prefab/RandomPropUI"
+        path: "prefab/ShuttlePropUI"
     },
     TipPropsUrl: {
         name: "TipsPropUI",
         bundle: "game",
         path: "prefab/TipsPropUI"
     },
-    
+    TipUIUrl: {
+        name: "TipUI",
+        bundle: "game",
+        path: "prefab/TipUI"
+    },
 };
 /**本地缓存字段名称 */
 export const LocalCacheKeys = {
@@ -174,11 +178,11 @@ export const initData: IInitData = {
 }
 
 export const BoardInitialConfig: IBoardParams = {
-    boardWidth: 728, // 棋盘总宽度
-    boardHeight: 600, // 棋盘总高度
+    boardWidth: 709, // 棋盘总宽度
+    boardHeight: 638, // 棋盘总高度
     gemWidth: 70, // 单个宝石的宽度
     gemHeight: 70, // 单个宝石的高度
-    spacing: 5, // 宝石之间的间距
+    spacing: 1, // 宝石之间的间距
     columns: 10, // 棋盘列数
     rows: 9, // 棋盘行数
     scaleFactor: 1, // 宝石缩放因子
@@ -191,17 +195,17 @@ export const BoardInitialConfig: IBoardParams = {
 };
 
 export const NewUserBoardConfig: IBoardParams = {
-    boardWidth: 600, // 新手棋盘总宽度
-    boardHeight: 600, // 新手棋盘总高度
+    boardWidth: 284, // 新手棋盘总宽度 (4 * (70 + 1))
+    boardHeight: 213, // 新手棋盘总高度 (3 * (70 + 1))
     gemWidth: 70, // 新手单个宝石的宽度
     gemHeight: 70, // 新手单个宝石的高度
-    spacing: 4, // 新手宝石之间的间距
+    spacing: 1, // 新手宝石之间的间距
     columns: 4, // 新手棋盘列数
     rows: 3, // 新手棋盘行数
     scaleFactor: 1.0, // 新手宝石缩放因子
     baseGemWidth: 70, // 新手基础宝石宽度
     baseGemHeight: 70, // 新手基础宝石高度
-    initialMatches: 3, // 新手初始匹配数
+    initialMatches: 2, // 新手初始匹配数
     gemTypes: 4, // 新手宝石类型数量
     scaleFactorWidth: 1, // 缩放因子宽度
     scaleFactorHeight: 1, // 缩放因子高度

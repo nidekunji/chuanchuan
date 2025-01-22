@@ -2,7 +2,7 @@
  * @Author: Aina
  * @Date: 2025-01-05 16:41:56
  * @LastEditors: Aina
- * @LastEditTime: 2025-01-13 05:50:42
+ * @LastEditTime: 2025-01-16 02:18:29
  * @FilePath: /chuanchuan/assets/game/scripts/FailUI.ts
  * @Description: 
  * 
@@ -54,7 +54,6 @@ export class FailUI extends Component {
     }
     onClickReset() {
         UIManager.instance.closeUI(uiLoadingConfigs.FailUrl.name);
-        console.log("onClickReset", this.eventDispatcher);
         if (this.GameBoard) {
             this.GameBoard.resetGame(); // Call the resetGame method on GameBoard
         } else {

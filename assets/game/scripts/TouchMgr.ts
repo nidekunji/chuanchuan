@@ -59,39 +59,41 @@ export class TouchMgr extends Component {
     }
 
     private onTouchStart(event: EventTouch) {
-        if (this.gameBoard.currentState != GameState.Idle) {
-            console.log('游戏状态不为Idle，提前返回');
+        if ((this.gameBoard.currentState != GameState.Idle) && (this.gameBoard.currentState != GameState.Exchanging)) {
+            console.log('游戏状态不为Idle或Exchanging，提前返回');
             return;
         }
+    
         console.log('onTouchStart');
         this.touchStartPos = event.getLocation();
         this.touchStartTime = Date.now();
         const result = this.processTouch(event);
         console.log('result', result);
         
-        if (result) {
-            console.log('触摸结果:', result);
-            this.targetGem = result.item;
-            this.targetGridPosition = { x: result.x, y: result.y };
-            console.log('点击的目标宝石:', this.targetGem, '网格位置:', this.targetGridPosition);
-            
-            // 检查是否有可消除的组合
+        // 重置移动方向
+        this.moveDirection = null;
+        this.isSwiping = false;  // 默认设置为 false
+        
+        if (!result) {
+            return;  // 如果没有触摸到宝石，直接返回
+        }
+    
+        console.log('触摸结果:', result);
+        this.targetGem = result.item;
+        this.targetGridPosition = { x: result.x, y: result.y };
+        console.log('点击的目标宝石:', this.targetGem, '网格位置:', this.targetGridPosition);
+        
+        // 只在非交换道具模式下检查三消
+        if (this.gameBoard.currentState === GameState.Idle) {
             const gemType = this.gameBoard.gems[result.y][result.x];
             const matchGroup = this.gameBoard.findMatchGroupAtPosition(result.x, result.y, gemType);
             
-            console.log('匹配组:', matchGroup); // 添加日志查看匹配组
+            console.log('匹配组:', matchGroup);
             if (matchGroup.length >= 3) {
-                console.log('找到可消除的组合'); // 添加日志确认找到组合
-                this.isSwiping = true; // 设置为true防止onTouchEnd触发点击事件
-                return;
-            } else {
-                console.log('没有找到可消除的组合'); // 如果没有找到组合
+                console.log('找到可消除的组合');
+                this.isSwiping = false;  // 设置为 false 以允许点击消除
             }
         }
-        
-        this.moveDirection = null;
-        this.isSwiping = false;
-        
     }
     processTouch(event: EventTouch) {
         const centerNode = this.node.parent;
@@ -195,7 +197,10 @@ export class TouchMgr extends Component {
     
 
     private onTouchMove(event: EventTouch) {
-      
+         // 如果在交换道具模式下，不处理移动
+         if (this.gameBoard.currentState === GameState.Exchanging) {
+            return;
+        }
     
         // 如果已经在拖动中，直接更新位置
         if (this.dragNode.active) {
@@ -350,7 +355,16 @@ export class TouchMgr extends Component {
             console.log('No valid touch start or target gem');
             return;
         }
-    
+        // 如果在交换道具模式下，只处理点击事件
+        if (this.gameBoard.currentState === GameState.Exchanging) {
+            console.log('====处理交换道具点击事件=====');
+            this.gameBoard.onGemClicked({ 
+                target: this.targetGem,
+                gridPosition: this.targetGridPosition
+            });
+            this.resetTouchState();
+            return;
+        }
         if (this.dragNode.active) {
             // 计算移动了多少格
             const currentPos = this.dragNode.position;
@@ -460,10 +474,12 @@ export class TouchMgr extends Component {
         } else {
             // 处理点击事件
             console.log('处理点击事件');
-            this.gameBoard.onGemClicked({ 
-                target: this.targetGem,
-                gridPosition: this.targetGridPosition
-            });
+            if (!this.isSwiping) {
+                this.gameBoard.onGemClicked({ 
+                    target: this.targetGem,
+                    gridPosition: this.targetGridPosition
+                });
+            }
         }
     
         // 重置状态

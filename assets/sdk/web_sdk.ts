@@ -7,7 +7,13 @@ export class web_sdk implements isdk {
     setUserCloudStorage(obj: { KVDataList: any[]; success: Function; fail: Function; }): void {
 
     }
-
+    getUserInfo(callback: (r: ResultState, res: any) => void): void {
+       callback?.(ResultState.YES, {userInfo: {}})
+    }
+    createInfoButton(param: { text: string, callback: (r: ResultState, data: any) => void }) {
+        
+    }
+    
     getOpenDataContext() {
 
     }
