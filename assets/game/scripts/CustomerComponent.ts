@@ -2,7 +2,7 @@
  * @Author: Aina
  * @Date: 2025-01-10 04:54:34
  * @LastEditors: Aina
- * @LastEditTime: 2025-01-22 23:50:57
+ * @LastEditTime: 2025-01-23 18:34:13
  * @FilePath: /chuanchuan/assets/game/scripts/CustomerComponent.ts
  * @Description: 
  * 
@@ -57,7 +57,6 @@ export class CustomerComponent extends Component {
         this.foodScaleX = randomScaleX;
         this.foodNode = this.node.getChildByName('food')!;
         this.foodNode.scale = new Vec3(this.foodScaleX, 1, 1);
-
         this.foodSprite = this.foodNode.getChildByName('sprite').getComponent(Sprite)!;
     }
     stopAllMovements(){
@@ -75,6 +74,7 @@ export class CustomerComponent extends Component {
             this.movement.stopAllActions();
         }
     }
+    
     /**
      * 
      * @param customerType 
@@ -86,18 +86,15 @@ export class CustomerComponent extends Component {
         this.tableId = tableId;
         this.isWaiting = isWaiting;
         this.node.active = false;
-        this.finishNode.active = false;
-        
-        this.node.active = true;
+        if (this.frameAnimation) {
+            this.frameAnimation.init(this.customerType);
+        }
         if (isWaiting) {
             this.node.setPosition(waitingPositions[tableId]);
-            if (this.frameAnimation) {
-                this.frameAnimation.init(this.customerType);
-            }
         } else {
-            this.hideFoodUI();
             this.node.setPosition(queuePositions[tableId]);
         }
+        this.node.active = true;
     }
     public getFoodSpritePosition(){
         let canvas = this.node.scene.getComponentInChildren(Canvas);
@@ -108,10 +105,11 @@ export class CustomerComponent extends Component {
     }
     
     
-    public setFoodUI(){
+    public setFoodUI() {
         this.foodNode.active = false;
-        if (this.isWaiting) {
-            this.updateFoodSprite(()=>{
+        // 只有在等待区域时才显示食物UI
+        if (this.isWaiting && this.currentState === CustomerState.Idle) {
+            this.updateFoodSprite(() => {
                 this.showFoodUIAnim();
             });
         }
@@ -126,6 +124,29 @@ export class CustomerComponent extends Component {
         this.foodNode.active = false;
         this.finishNode.active = false;
     }
+    private FinshedEatFood() {
+        Tween.stopAllByTarget(this.finishNode);
+        this.finishNode.active = true;
+        tween(this.finishNode)
+            // Start from small scale with slight rotation
+            .set({ scale: new Vec3(0, 0, 0), angle: -15 })
+            // Pop in with slight overshoot
+            .to(0.2, { scale: new Vec3(1.2, 1.2, 1.2), angle: 10 }, { easing: 'backOut' })
+            // Shake animation
+            .to(0.1, { angle: -8 })
+            .to(0.1, { angle: 6 })
+            .to(0.1, { angle: -4 })
+            .to(0.1, { angle: 0 })
+            .to(0.1, { scale: new Vec3(0.5, 0.5, 0.5) })
+            // Hold for a moment
+            .delay(0.3)
+            // Fade out
+            .call(() => {
+                this.finishNode.active = false;
+                this.hideFoodUI();
+            })
+            .start();
+    }
     public showFoodUIAnim(){
         this.foodNode.active = true;
         Tween.stopAllByTarget(this.foodNode);
@@ -137,11 +158,20 @@ export class CustomerComponent extends Component {
         // 缩小
         .to(time, { scale: new Vec3(0.8*randomScaleX, 0.8, 0.8) })
         // 回到原始尺寸
-        .to(time, { scale: new Vec3(1*randomScaleX, 1, 1) })
+        .to(time, { scale: new Vec3(0.5, 0.5, 0.5) })
         // 循环
         .union()
         .repeatForever()
         .start();
+    }
+    public stopFoodUIAnim() {
+        // 停止所有针对 foodNode 的缓动动画
+        Tween.stopAllByTarget(this.foodNode);
+        
+        // 重置为原始比例
+        if (this.foodNode) {
+            this.foodNode.scale = new Vec3(this.foodScaleX, 1, 1);
+        }
     }
    
     
@@ -161,6 +191,7 @@ export class CustomerComponent extends Component {
         });
     }
     // 添加方法来处理状态转换并相应地调用移动方法
+
 private handleStateChange() {
     switch (this.currentState) {
         case CustomerState.None:
@@ -170,7 +201,7 @@ private handleStateChange() {
             this.setFoodUI();
             break;
         case CustomerState.IsReturning:
-            this.hideFoodUI();
+            this.FinshedEatFood();
             break;
         case CustomerState.JoiningQueue:
             this.hideFoodUI();

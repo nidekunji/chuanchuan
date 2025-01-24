@@ -2,7 +2,7 @@
  * @Author: Aina
  * @Date: 2025-01-14 04:28:04
  * @LastEditors: Aina
- * @LastEditTime: 2025-01-23 03:06:53
+ * @LastEditTime: 2025-01-23 20:15:52
  * @FilePath: /chuanchuan/assets/setting/script/SettingUI.ts
  * @Description: 
  * 
@@ -14,7 +14,6 @@ import { AudioManager } from '../../common/scripts/AudioManager';
 import { LocalStorageManager } from '../../common/scripts/LocalStorageManager';
 import { UIManager } from '../../common/scripts/UIManager';
 import { EventDispatcher } from '../../common/scripts/EventDispatcher';
-// import { GameBoard } from '../../game/script/Test';
 const { ccclass, property } = _decorator;
 
 @ccclass('SettingUI')
@@ -30,14 +29,11 @@ export class SettingUI extends Component {
     private soundNode: Node = null;
 
     @property(Node)
-    private shakeNode: Node = null;
-
-    private eventDispatcher: EventDispatcher;
-    
-  //  private GameBoard: GameBoard;
+    private shakeNode: Node = null  
     
 
     onLoad() {
+        console.error("SettingUI onLoad!!!!")
         
          // 从全局缓存中读取初始开关状态
         //  console.log(LocalStorageManager.getItem(LocalCacheKeys.BackgroundMusic),'effect' )
@@ -58,12 +54,15 @@ export class SettingUI extends Component {
          }
     }
     onClickReset() {
+        console.error("onClickReset!!!!")
         UIManager.instance.closeUI(uiLoadingConfigs.SettingUrl.name);
-        // if (this.GameBoard) {
-        //   //  this.GameBoard.resetGame(); // Call the resetGame method on GameBoard
-        // } else {
-        //     console.error('GameBoard is not initialized');
-        // }
+        const eventDispatcher = EventDispatcher.getInstance();
+        if (eventDispatcher) {
+            console.error("触发重置游戏!")
+            eventDispatcher.emit('restartGame');
+        } else {
+            console.error("EventDispatcher not found!!!");
+        }
     }
     abandonChallenge() {
         // Close the current UI

@@ -2,7 +2,7 @@
  * @Author: Aina
  * @Date: 2023-12-23 15:55:18
  * @LastEditors: Aina
- * @LastEditTime: 2025-01-23 00:24:00
+ * @LastEditTime: 2025-01-24 21:01:19
  * @FilePath: /chuanchuan/assets/app/App.ts
  * @Description: 
  * 
@@ -54,30 +54,69 @@ export class App extends Component {
     private _bundleLoaded: boolean = false;
     private _loadedScene: any = null;
     
+    // private loadBundles(bundleNames: string[]) {
+    //     // console.log("load bundles " + Date.now());
+    //     let loadedCount = 0;
+    //     bundleNames.forEach(bundleName => {
+    //         ResourceManager.loadBundle(bundleName, (err, bundle) => {
+    //             if (err) {
+    //                 console.error("加载Bundle失败:", err);
+    //             } else {
+    //                 loadedCount++;
+    //                 console.log(bundleName,"load success" + Date.now())
+    //                 if (loadedCount === bundleNames.length) {
+    //                     console.log("bundleNames load success" + Date.now())
+    //                 }
+    //                 if (bundleName === "main2") {
+    //                     bundle.loadScene("Main", (err, scene) => {
+    //                         if (err) {
+    //                             console.error("Failed to load MainScene:", err);
+    //                             return;
+    //                         }
+    //                         this._bundleLoaded = true;
+    //                         this._loadedScene = scene;
+    //                         this.tryEnterScene();
+    //                     });
+    //                 }
+    //             }
+    //         });
+    //     });
+    // }
     private loadBundles(bundleNames: string[]) {
-        // console.log("load bundles " + Date.now());
-        let loadedCount = 0;
-        bundleNames.forEach(bundleName => {
-            ResourceManager.loadBundle(bundleName, (err, bundle) => {
-                if (err) {
-                    console.error("加载Bundle失败:", err);
-                } else {
-                    loadedCount++;
-                    if (loadedCount === bundleNames.length) {
-                        console.log("bundleNames load success" + Date.now())
+        // Load game bundle first
+        ResourceManager.loadBundle("game", (err, bundle) => {
+            if (err) {
+                console.error("Failed to load game bundle:", err);
+                return;
+            }
+            console.log("game bundle loaded successfully");
+            
+            // Then load remaining bundles
+            let loadedCount = 0;
+            const remainingBundles = bundleNames.filter(name => name !== "game");
+            remainingBundles.forEach(bundleName => {
+                ResourceManager.loadBundle(bundleName, (err, bundle) => {
+                    if (err) {
+                        console.error("Failed to load bundle:", err);
+                    } else {
+                        loadedCount++;
+                        console.log(bundleName, "load success" + Date.now())
+                        if (loadedCount === remainingBundles.length) {
+                            console.log("All bundles loaded successfully" + Date.now())
+                        }
+                        if (bundleName === "main2") {
+                            bundle.loadScene("Main", (err, scene) => {
+                                if (err) {
+                                    console.error("Failed to load MainScene:", err);
+                                    return;
+                                }
+                                this._bundleLoaded = true;
+                                this._loadedScene = scene;
+                                this.tryEnterScene();
+                            });
+                        }
                     }
-                    if (bundleName === "main2") {
-                        bundle.loadScene("Main", (err, scene) => {
-                            if (err) {
-                                console.error("Failed to load MainScene:", err);
-                                return;
-                            }
-                            this._bundleLoaded = true;
-                            this._loadedScene = scene;
-                            this.tryEnterScene();
-                        });
-                    }
-                }
+                });
             });
         });
     }
@@ -87,15 +126,15 @@ export class App extends Component {
         }
     }
     onLoad() { 
-        this.loadBundles(["main2", "setting", "game", "sceneRes", "setting"]);
+        this.loadBundles(["setting","game","main2", "setting","sceneRes"]);
+        
         let loading = this.node.getChildByName("Loading")!
         let ratio = loading.getChildByName("Ratio")!
        
         this.topText = ratio.getChildByName("TopText")!.getComponent(Label)!
         this.topText.node.active = initData.showLoadingText
 
-        loading.getChildByName("Age")!.active = initData.showLoadingText
-
+    
         let Bg = ratio.getChildByName("Bg")!
         this.spriteRatio = Bg.getChildByName("Ratio")!.getComponent(Sprite)!
         this.sp = this.spriteRatio.getComponent(UITransform)!

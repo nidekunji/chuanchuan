@@ -2,7 +2,7 @@
  * @Author: Aina
  * @Date: 2024-12-10 00:38:27
  * @LastEditors: Aina
- * @LastEditTime: 2025-01-12 00:56:10
+ * @LastEditTime: 2025-01-23 16:38:06
  * @FilePath: /chuanchuan/assets/core/scripts/define/Types.ts
  * @Description: 
  * 
@@ -369,4 +369,11 @@ export interface UILoadConfig {
     name: string;     // b
     bundle: string;     // bundle名称
     path: string;       // 预制体路径
+}
+
+// 存放格子的状态
+export interface StorageSlot {
+    id: number;         // 位置编号（0-5）
+    isUnlocked: boolean;     // 是否已解锁
+    type: number;            // 存放的食物类型，0表示空
 }

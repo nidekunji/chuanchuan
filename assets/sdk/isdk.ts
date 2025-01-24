@@ -1,4 +1,4 @@
-import { SDKDir, SDKShareParam, DataCallback, ResultState } from "./sdk_define";
+import { SDKDir, SDKShareParam, DataCallback, ResultState, SDKStyle } from "./sdk_define";
 
 
 export interface isdk {
@@ -13,7 +13,9 @@ export interface isdk {
         fail: Function
     }): void;
 
-    createInfoButton(param: { text: string,  callback: (r: ResultState, data: any) => void, right?: number, top?: number, width?: number, height?: number }): void
+    createInfoButton(param: { type: string, image?: string, text?: string, callback: (r: ResultState, data: any) => void, style: SDKStyle }): void
+
+    destroyInfoButton(): void
 
     getUserInfo(callback: (r: ResultState, res: any) => void): void
 
@@ -36,5 +38,7 @@ export interface isdk {
     login(account: string, func: DataCallback): void;
 
     showCustomAd(param: { rx: number, ry: number }, index?: number): void
+
+    init(vs: { width: number, height: number }): void
 }
 

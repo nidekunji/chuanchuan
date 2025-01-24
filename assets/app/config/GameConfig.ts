@@ -88,6 +88,7 @@ export const LocalCacheKeys = {
     GameSave: "gameSave",//游戏保存
     IsNewUser: "isNewUser",//是否是新手
     Level: "level",//等级
+    FoodStorage: "foodStorage",//食物存放区
     // Add more keys as needed
 }
 export const NewUserGameConfig = {

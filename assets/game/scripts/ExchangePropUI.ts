@@ -2,7 +2,7 @@
  * @Author: Aina
  * @Date: 2025-01-13 04:39:57
  * @LastEditors: Aina
- * @LastEditTime: 2025-01-21 11:58:47
+ * @LastEditTime: 2025-01-23 21:53:07
  * @FilePath: /chuanchuan/assets/game/scripts/ExchangePropUI.ts
  * @Description: 
  * 
@@ -35,10 +35,8 @@ export class ExchangePropUI extends Component {
     update(deltaTime: number) {
         
     }
-    onClickExit(cb?: Function) {
-        UIManager.instance.closeUI(uiLoadingConfigs.ExchangePropUrl.name, 1, ()=>{
-            cb && cb();
-        });
+    onClickExit() {
+        UIManager.instance.closeUI(uiLoadingConfigs.ExchangePropUrl.name, 1);
     }
     addExchangeProps() {
         this.GameBoard.propManager.addExchangeProps();
@@ -50,17 +48,15 @@ export class ExchangePropUI extends Component {
             if (this.node.isValid) {
                 if (r) {
                     // 成功回调
-                    this.onClickExit(()=>{
-                        this.addExchangeProps();
-                    });
+                    this.addExchangeProps();
+                    this.onClickExit();
                 }
             }
         })
         } else {
             // web 环境直接成功回调
-            this.onClickExit(()=>{
-                this.addExchangeProps();
-            });
+            this.addExchangeProps();
+            this.onClickExit();
         }
     }
 }

@@ -1,5 +1,12 @@
 
+import { UITransform, Node } from 'cc';
 
+export type SDKStyle = {
+    left: number,
+    top: number,
+    width: number,
+    height: number
+}
 
 export enum SDKDir {
     BOTTOM_MID,//屏幕下中，常用
@@ -55,6 +62,24 @@ export type LaunchOptionsConfigType = {
     extraData: any
 
 }
+export const SDKUserButtonType = {
+    text: 'text',
+    image: 'image',
+}
+
+export function getLeftTopRect(node: Node): { left: number, top: number, width: number, height: number } {
+    let parentTransform = node.parent.getComponent(UITransform)
+    let parentAnchor = parentTransform.anchorPoint;
+    let midx = parentTransform.width * parentAnchor.x;
+    let midy = parentTransform.height * parentAnchor.y;
+    let transform: UITransform = node.getComponent(UITransform)
+    let anchor = transform.anchorPoint;
+    let x = node.position.x - (transform.width * anchor.x);
+    let y = node.position.y + (transform.height * anchor.y)
+    return { left: midx + x, top: midy - y, width: transform.width, height: transform.height }
+}
+
+
 
 export type SDKDataType = {
     gameId?: string,

@@ -1,5 +1,5 @@
 import { isdk } from "./isdk";
-import { SDKDir, SDKShareParam, ShareType, ResultCallback, ResultState, DataCallback } from "./sdk_define";
+import { SDKDir, SDKShareParam, ShareType, ResultCallback, ResultState, DataCallback, SDKStyle, SDKUserButtonType } from "./sdk_define";
 import { SDKData } from "./sdk_data";
 
 
@@ -7,14 +7,67 @@ import { SDKData } from "./sdk_data";
 // const bannerAd: string[] = ['adunit-c54cc7d32181aad9']
 export class wx_sdk implements isdk {
     private sdk: any = window['wx']
-
+    protected visibleSize: { width: number, height: number } = { width: 1, height: 1 };
     protected _openContext: any;
 
+    /**
+ * 显示宽高与小游戏屏幕宽高的比例
+ */
+    protected screenRatio: { x: number, y: number } = { x: 1, y: 1 }
 
+    getScreenSize(): { width: number, height: number } {
+        let systemInfo = this.sdk.getSystemInfoSync();
+        return { width: systemInfo.screenWidth, height: systemInfo.screenHeight }
+    }
+    setScreenRatio() {
+        let visibleSize = this.getVisibleSize();
+        console.log(' visibleSize ', visibleSize)
+        let screenSize = this.getScreenSize();
+        console.log(' screenSize ', screenSize)
+        this.screenRatio.x = screenSize.width / visibleSize.width
+        this.screenRatio.y = screenSize.height / visibleSize.height
+    }
+
+    getScreenRatio() {
+        return this.screenRatio;
+    }
+
+    setVisibleSize(s: { width: number, height: number }) {
+        this.visibleSize = s;
+        // console.log(' setVisibleSize  this.visibleSize ', this.visibleSize)
+        this.setScreenRatio()
+    }
+
+    getVisibleSize() {
+        return this.visibleSize;
+    }
+    changeStyle(style: SDKStyle) {
+        let screenRatio = this.getScreenRatio();
+        console.log('changeStyle screenRatio ', screenRatio)
+        // let style = param.style;
+        if (style.left != undefined) {
+            style.left = style.left * screenRatio.x;
+        }
+        if (style.top != undefined) {
+            style.top = style.top * screenRatio.y;
+        }
+        if (style.width != undefined) {
+            style.width = style.width * screenRatio.x;
+        }
+        if (style.height != undefined) {
+            style.height = style.height * screenRatio.y;
+        }
+    }
     constructor() {
+
+    }
+
+    init(vs: { width: number, height: number }): void {
+        this.setVisibleSize(vs)
         this.share.init()
     }
 
+    protected infoButton: any;
     protected loginMgr: WXLogin = new WXLogin();
 
 
@@ -70,35 +123,52 @@ export class wx_sdk implements isdk {
         })
     }
 
-    createInfoButton(param: { text: string, callback: (r: ResultState, data: any) => void,right?: number,
-        top?: number,
-        width?: number,
-        height?: number
-    }) {
+    createInfoButton(param: { type: string, image?: string, text?: string, callback: (r: ResultState, data: any) => void, style: SDKStyle }) {
         let sdk = this.sdk;
         // 否则，先通过 wx.createUserInfoButton 接口发起授权
+        this.changeStyle(param.style)
+
+        console.log('createInfoButton style ', param.style)
         let button = sdk.createUserInfoButton({
-            type: 'text',
-            text: '',  // 可以不设置文字
+            type: param.type,
+            text: param.text,
+            image: param.image,
             style: {
-                right: param.right || 10,
-                top: param.top || 76,
-                width: param.width || 155,
-                height: param.height || 153,
-                lineHeight: 40,
-                backgroundColor: 'transparent',  // 背景透明
-                color: 'transparent',  // 文本颜色透明
-                textAlign: 'center',
-                fontSize: 16,
-                borderRadius: 4
+                left: param.style.left,
+                top: param.style.top,
+                width: param.style.width,
+                height: param.style.height,
+                // lineHeight: 40,
+                // backgroundColor: '#ff0000',
+                // color: '#ffffff',
+                // textAlign: 'center',
+                // fontSize: 16,
+                // borderRadius: 4
             }
         })
         button.onTap((res: any) => {
             // 用户同意授权后回调，通过回调可获取用户头像昵称信息
             console.log('createInfoButton onTap ', res)
             param.callback(ResultState.YES, res)
-            button.destroy(); 
         })
+        this.infoButton = button;
+    }
+
+    setInfoButonVisible(f: boolean): void {
+        if (this.infoButton) {
+            if (f) {
+                this.infoButton.show()
+            } else {
+                this.infoButton.hide();
+            }
+        }
+    }
+
+    destroyInfoButton(): void {
+        if (this.infoButton) {
+            this.infoButton.destroy();
+            this.infoButton = null;
+        }
     }
 
     authorize(obj: { scope: string, success: Function, fail: Function }) {
@@ -155,7 +225,15 @@ export class wx_sdk implements isdk {
     // }
 
     protected rewardAd: any[] = [];
+    protected videoAdCallback: (result: number) => void = null;
+    protected callVedioCallback(r: number) {
+        if (this.videoAdCallback) {
+            this.videoAdCallback(r)
+            this.videoAdCallback = null;
+        }
+    }
     showRewardedVideoAd(callback: (result: number) => void, index: number = 0): void {
+        this.videoAdCallback = callback;
         let videoAd = this.rewardAd[index]
         if (!videoAd) {
             if (!SDKData.wx.reward[index]) {
@@ -170,11 +248,11 @@ export class wx_sdk implements isdk {
                 // 小于 2.1.0 的基础库版本，res 是一个 undefined
                 if (res && res.isEnded || res === undefined) {
                     // 正常播放结束，可以下发游戏奖励
-                    callback(1)
+                    this.callVedioCallback(1)
                 }
                 else {
                     // 播放中途退出，不下发游戏奖励
-                    callback(0)
+                    this.callVedioCallback(0)
                 }
             })
             videoAd.onLoad(() => {
@@ -182,7 +260,7 @@ export class wx_sdk implements isdk {
             })
             videoAd.onError(err => {
                 console.log(err)
-                callback(0)
+                this.callVedioCallback(0)
             })
         }
 

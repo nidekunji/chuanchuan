@@ -228,9 +228,9 @@ function draw(res) {
     users.length = 0;
     let key = 'level'
     res.data.forEach((user) => {
-        console.log(' user ', user)
+        // console.log(' user ', user)
         let itemData = user.KVDataList.find((item) => item.key === key)
-        console.log(' itemData ', itemData)
+        // console.log(' itemData ', itemData)
         if (!itemData) return;
         if (!itemData.value) return;
         // const detail = JSON.parse(itemData.value);

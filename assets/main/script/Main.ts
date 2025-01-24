@@ -2,7 +2,7 @@
  * @Author: Aina
  * @Date: 2024-12-19 01:17:40
  * @LastEditors: Aina
- * @LastEditTime: 2025-01-19 17:02:23
+ * @LastEditTime: 2025-01-24 20:52:22
  * @FilePath: /chuanchuan/assets/main/script/Main.ts
  * @Description: 
  * 
@@ -15,7 +15,7 @@ import { LocalStorageManager } from '../../common/scripts/LocalStorageManager';
 import { AudioManager } from '../../common/scripts/AudioManager';
 import { UIManager } from '../../common/scripts/UIManager';
 import { sdk } from '../../sdk/sdk';
-import { SDKDir, ResultState } from '../../sdk/sdk_define';
+import { SDKDir, ResultState, getLeftTopRect, SDKUserButtonType } from '../../sdk/sdk_define';
 @ccclass('Main')
 export class HomeButtonAnimation extends Component {
     @property(Node)
@@ -41,26 +41,42 @@ export class HomeButtonAnimation extends Component {
         }
         LocalStorageManager.clearAllCache();
         sdk.p.showBanner(0, SDKDir.BOTTOM_MID)
-    
+        
+        // 
+
         sdk.p.getUserInfo((r: ResultState, data: any) => {
-            // 如果用户没有授权
-            // console.log("r", ResultState.NO)
+            this.rankNode.active = r == ResultState.YES;
             if (r == ResultState.NO) {
-                console.log("r", ResultState.NO)
-                // 获取 rankNode 的位置和尺寸
-                let rankNodePosition = this.rankNode.getWorldPosition(); // 获取 rankNode 的世界坐标
-                let rankNodeSize = this.rankNode.getComponent(UITransform).contentSize; // 获取 rank
+                let style = getLeftTopRect(this.rankNode)
+                console.log(' style ', style)
                 sdk.p.createInfoButton({
-                                text: "", callback: (r: ResultState, data: any) => {
-                                    this.onRankBtnClick();
-                                },
-                                right: rankNodePosition.x,
-                                top: rankNodePosition.y,
-                                width: rankNodeSize.width,
-                                height: rankNodeSize.height
+                    type: SDKUserButtonType.image,
+                    image: "openDataContext/assets/rank_icon.png",
+                    text: "排行榜", callback: (r: ResultState, data: any) => {
+                        this.onRankBtnClick();
+                    }, style: style
                 })
             }
-        });
+        })
+        // sdk.p.getUserInfo((r: ResultState, data: any) => {
+        //     // 如果用户没有授权
+        //     // console.log("r", ResultState.NO)
+        //     if (r == ResultState.NO) {
+        //         console.log("r", ResultState.NO)
+        //         // 获取 rankNode 的位置和尺寸
+        //         let rankNodePosition = this.rankNode.getWorldPosition(); // 获取 rankNode 的世界坐标
+        //         let rankNodeSize = this.rankNode.getComponent(UITransform).contentSize; // 获取 rank
+        //         sdk.p.createInfoButton({
+        //                         text: "", callback: (r: ResultState, data: any) => {
+        //                             this.onRankBtnClick();
+        //                         },
+        //                         right: rankNodePosition.x,
+        //                         top: rankNodePosition.y,
+        //                         width: rankNodeSize.width,
+        //                         height: rankNodeSize.height
+        //         })
+        //     }
+        // });
         
 
         // sdk.p.getUserInfo((r: ResultState, data: any) => {
@@ -126,25 +142,31 @@ export class HomeButtonAnimation extends Component {
     private preloadGameBundle() {
         // 检查bundle是否已加载
         const bundle = assetManager.getBundle("game");
-        if (!bundle) {
-            assetManager.loadBundle("game", (err, bundle) => {
-                if (err) {
-                    console.error("Failed to preload game bundle:", err);
-                    return;
-                }
-            });
-        } else {
-            console.log("Game bundle already preloaded");
-            bundle.loadScene(this._sceneName, (err, scene) => {
-                if (err) {
-                    console.error("Failed to load MainScene:", err);
-                    return;
-                }
+    if (!bundle) {
+        // 先加载bundle
+        assetManager.loadBundle("game", (err, bundle) => {
+            if (err) {
+                console.error("预加载游戏bundle失败:", err);
+                return;
+            }
+            // 只有在bundle成功加载后才加载场景
+            this.loadGameScene(bundle);
+        });
+    } else {
+        // bundle已存在,继续加载场景
+        console.log("bundle已存在,继续加载场景")
+        this.loadGameScene(bundle);
+    }
 
-                //  director.runScene(scene);
-            });
-        }
-
+    }
+    private loadGameScene(bundle: any) {
+        bundle.preloadScene(this._sceneName, (err) => {
+            if (err) {
+                console.error("预加载主场景失败:", err);
+                return;
+            }
+            console.log("游戏场景预加载成功");
+        });
     }
 
     onDestroy() {
@@ -180,6 +202,7 @@ export class HomeButtonAnimation extends Component {
     }
 
     onShareBtnClick() {
+        
         sdk.p.showShare({
             index: 0, callback: (r: number) => {
                 if (this.node.isValid) {

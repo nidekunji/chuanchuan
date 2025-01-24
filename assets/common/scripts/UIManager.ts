@@ -145,17 +145,45 @@ export class UIManager extends Component {
         });
     }
 
+    // public closeUI(uiName: string, animType: number = 1, callback?: Function) {
+    //     console.error("closeUI!!!!")
+    //     const uiNode = this._uiMap.get(uiName);
+       
+    //     const content = uiNode.getChildByName('content');
+    //     if (uiNode) {
+    //         this.playCloseAnim(content, animType, () => {
+    //             uiNode.destroy();
+    //             this._uiMap.delete(uiName);
+    //             callback?.();
+    //         });
+    //     }
+    // }
     public closeUI(uiName: string, animType: number = 1, callback?: Function) {
         const uiNode = this._uiMap.get(uiName);
-       
-        const content = uiNode.getChildByName('content');
-        if (uiNode) {
-            this.playCloseAnim(content, animType, () => {
-                uiNode.destroy();
-                this._uiMap.delete(uiName);
-                callback?.();
-            });
+        if (!uiNode || !uiNode.isValid) {
+            console.warn(`UI ${uiName} not found or already invalid`);
+            return;
         }
+
+        const content = uiNode.getChildByName('content');
+        if (!content) {
+            // 如果没有找到content节点，直接销毁
+            uiNode.destroy();
+            this._uiMap.delete(uiName);
+            callback?.();
+            return;
+        }
+
+        // 先从Map中移除，防止重复关闭
+        this._uiMap.delete(uiName);
+
+        // 播放关闭动画，在动画完成后再销毁节点
+        this.playCloseAnim(content, animType, () => {
+            if (uiNode.isValid) {
+                uiNode.destroy();
+            }
+            callback?.();
+        });
     }
 
     /**

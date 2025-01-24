@@ -2,7 +2,7 @@
  * @Author: Aina
  * @Date: 2025-01-16 02:17:00
  * @LastEditors: Aina
- * @LastEditTime: 2025-01-16 03:24:56
+ * @LastEditTime: 2025-01-23 21:53:26
  * @FilePath: /chuanchuan/assets/game/scripts/TipsPropUI.ts
  * @Description: 
  * 
@@ -41,15 +41,15 @@ export class TipsPropUI extends Component {
             if (this.node.isValid) {
                 if (r) {
                     // 成功回调
-                    this.onClickClose();
                     this.GameBoard.propManager.addHintProps();
+                    this.onClickClose();
                 }
             }
         })
         } else {
             // web 环境直接成功回调
-            this.onClickClose();
             this.GameBoard.propManager.addHintProps();
+            this.onClickClose();
         }
     }
 }

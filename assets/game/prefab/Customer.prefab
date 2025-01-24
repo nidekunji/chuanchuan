@@ -274,7 +274,7 @@
       "__id__": 2
     },
     "_children": [],
-    "_active": false,
+    "_active": true,
     "_components": [
       {
         "__id__": 10
@@ -452,7 +452,7 @@
       "a": 255
     },
     "_spriteFrame": {
-      "__uuid__": "5711bb57-1fc9-48af-8bf5-8ddab0c007c7@f9941",
+      "__uuid__": "8f466739-0e88-40c4-b5fd-19d4f83ec765@f9941",
       "__expectedType__": "cc.SpriteFrame"
     },
     "_type": 0,
