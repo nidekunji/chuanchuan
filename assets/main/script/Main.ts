@@ -2,7 +2,7 @@
  * @Author: Aina
  * @Date: 2024-12-19 01:17:40
  * @LastEditors: Aina
- * @LastEditTime: 2025-01-24 20:52:22
+ * @LastEditTime: 2025-01-25 10:26:29
  * @FilePath: /chuanchuan/assets/main/script/Main.ts
  * @Description: 
  * 
@@ -39,16 +39,16 @@ export class HomeButtonAnimation extends Component {
             director.addPersistRootNode(audioManagerNode);
             this.checkAndPlayBackgroundMusic();
         }
-        LocalStorageManager.clearAllCache();
+       // LocalStorageManager.clearAllCache();
         sdk.p.showBanner(0, SDKDir.BOTTOM_MID)
-        
-        // 
-
+    
         sdk.p.getUserInfo((r: ResultState, data: any) => {
             this.rankNode.active = r == ResultState.YES;
             if (r == ResultState.NO) {
                 let style = getLeftTopRect(this.rankNode)
-                console.log(' style ', style)
+                console.log(style, "style")
+                style.width = 153
+                style.height = 153
                 sdk.p.createInfoButton({
                     type: SDKUserButtonType.image,
                     image: "openDataContext/assets/rank_icon.png",
@@ -58,41 +58,10 @@ export class HomeButtonAnimation extends Component {
                 })
             }
         })
-        // sdk.p.getUserInfo((r: ResultState, data: any) => {
-        //     // 如果用户没有授权
-        //     // console.log("r", ResultState.NO)
-        //     if (r == ResultState.NO) {
-        //         console.log("r", ResultState.NO)
-        //         // 获取 rankNode 的位置和尺寸
-        //         let rankNodePosition = this.rankNode.getWorldPosition(); // 获取 rankNode 的世界坐标
-        //         let rankNodeSize = this.rankNode.getComponent(UITransform).contentSize; // 获取 rank
-        //         sdk.p.createInfoButton({
-        //                         text: "", callback: (r: ResultState, data: any) => {
-        //                             this.onRankBtnClick();
-        //                         },
-        //                         right: rankNodePosition.x,
-        //                         top: rankNodePosition.y,
-        //                         width: rankNodeSize.width,
-        //                         height: rankNodeSize.height
-        //         })
-        //     }
-        // });
-        
-
-        // sdk.p.getUserInfo((r: ResultState, data: any) => {
-        //  //   this.rankNode.active = r == ResultState.YES;
-        //     if (r == ResultState.NO) {
-        //         sdk.p.createInfoButton({
-        //             text: "排行榜", callback: (r: ResultState, data: any) => {
-        //                 this.onRankBtnClick();
-        //             }
-        //         })
-        //     }
-        // })
-
-
     }
     start() {
+
+        // 
         this.preloadGameBundle()
         if (!this.startBtn) {
             console.error("Button node is not assigned!");
@@ -109,14 +78,8 @@ export class HomeButtonAnimation extends Component {
 
         // 添加按钮点击事件监听
         this.startBtn.on(Node.EventType.TOUCH_END, this.onButtonClick, this);
-        // LocalStorageManager.clearAllCache()
-
-
     }
     private checkAndPlayBackgroundMusic() {
-        // const uiManager = UIManager.instance;
-        // console.log("uiManager", uiManager)
-
         LocalStorageManager.setItem(LocalCacheKeys.BackgroundMusic, 'true');
         const audioManager = AudioManager.instance;
         if (audioManager) {
@@ -126,6 +89,9 @@ export class HomeButtonAnimation extends Component {
         }
     }
     onButtonClick() {
+        if (window['wx']) {
+            sdk.p.destroyInfoButton()
+        }
         // 停止按钮动画
         if (this._buttonTween) {
             this._buttonTween.stop(); // 停止动画
@@ -184,12 +150,6 @@ export class HomeButtonAnimation extends Component {
     }
 
     onRankBtnClick() {
-
-        // sdk.p.getUserInfo((r: ResultState, data: any) => {
-        //     if (r == ResultState.YES) {
-        //         this.showRank();
-        //     }
-        // })
         sdk.p.getSetting({
             scope: "scope.WxFriendInteraction", success: () => {
                 this.showRank();
@@ -197,12 +157,9 @@ export class HomeButtonAnimation extends Component {
 
             }
         })
-        // const uiManager = UIManager.instance;
-        // uiManager.openUI(uiLoadingConfigs.RankUIUrl);
     }
 
     onShareBtnClick() {
-        
         sdk.p.showShare({
             index: 0, callback: (r: number) => {
                 if (this.node.isValid) {

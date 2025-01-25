@@ -228,6 +228,7 @@ export class GameBoard extends Component {
         } else {
             console.error("AudioManager component not found on this node");
         }
+        console.error("checkAndPlayBackgroundMusic", LocalStorageManager.getItem(LocalCacheKeys.BackgroundMusic))
     }
     private init() {
         this.initConfig();
@@ -1453,7 +1454,6 @@ private logPoolStatus(operation: string) {
         };
     }
     public resetGame() {
-        console.error("重置游戏！-------")
         // 1. 先移除存档
         LocalStorageManager.removeItem(LocalCacheKeys.GameSave);
         // 2. 确保当前状态为空闲

@@ -2,7 +2,7 @@
  * @Author: Aina
  * @Date: 2025-01-14 04:28:04
  * @LastEditors: Aina
- * @LastEditTime: 2025-01-23 20:15:52
+ * @LastEditTime: 2025-01-25 10:20:25
  * @FilePath: /chuanchuan/assets/setting/script/SettingUI.ts
  * @Description: 
  * 
@@ -33,32 +33,23 @@ export class SettingUI extends Component {
     
 
     onLoad() {
-        console.error("SettingUI onLoad!!!!")
-        
-         // 从全局缓存中读取初始开关状态
-        //  console.log(LocalStorageManager.getItem(LocalCacheKeys.BackgroundMusic),'effect' )
-        //  console.log(LocalStorageManager.getItem(LocalCacheKeys.SoundEffects),'music')
+        console.error("SettingUI onLoad!!!!", LocalStorageManager.getItem(LocalCacheKeys.BackgroundMusic))
+      
          this.isBackgroundMusicOn = LocalStorageManager.getItem(LocalCacheKeys.BackgroundMusic) === 'true';
          this.isSoundEffectsOn = LocalStorageManager.getItem(LocalCacheKeys.SoundEffects) === 'true';
          this.isVibrateSwitch = LocalStorageManager.getItem(LocalCacheKeys.ShakeEffect) === 'true';
-        //  console.log(this.isBackgroundMusicOn, "this.isBackgroundMusicOn")
-        //  console.log(this.isSoundEffectsOn, "this.isSoundEffectsOn")
-        // this.eventDispatcher = EventDispatcher.getInstance();
+         console.log(this.isBackgroundMusicOn,this.isSoundEffectsOn,this.isVibrateSwitch)
          this.updateView();
-
          const canvasNode = this.node.scene.getChildByName('Canvas'); // Assuming 'Canvas' is the name of the canvas node
          if (canvasNode) {
-           //  this.GameBoard = canvasNode.getComponent(GameBoard);
          } else {
              console.error("Canvas node not found");
          }
     }
     onClickReset() {
-        console.error("onClickReset!!!!")
         UIManager.instance.closeUI(uiLoadingConfigs.SettingUrl.name);
         const eventDispatcher = EventDispatcher.getInstance();
         if (eventDispatcher) {
-            console.error("触发重置游戏!")
             eventDispatcher.emit('restartGame');
         } else {
             console.error("EventDispatcher not found!!!");
@@ -76,7 +67,7 @@ export class SettingUI extends Component {
 
     onClickSwitchBackgroundMusic() {
         this.isBackgroundMusicOn = !this.isBackgroundMusicOn;
-     //   AudioManager.instance.setBackgroundMusicEnabled(this.isBackgroundMusicOn);
+       AudioManager.instance.setBackgroundMusicEnabled(this.isBackgroundMusicOn);
         LocalStorageManager.setItem(LocalCacheKeys.BackgroundMusic, this.isBackgroundMusicOn.toString());
         this.updateView();
     }
@@ -88,7 +79,7 @@ export class SettingUI extends Component {
 
     onClickSwitchSoundEffects() {
         this.isSoundEffectsOn = !this.isSoundEffectsOn;
-     //   AudioManager.instance.setSoundEffectsEnabled(this.isSoundEffectsOn);
+        AudioManager.instance.setSoundEffectsEnabled(this.isSoundEffectsOn);
         LocalStorageManager.setItem(LocalCacheKeys.SoundEffects, this.isSoundEffectsOn.toString());
         this.updateView();
     }

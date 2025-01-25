@@ -2,7 +2,7 @@
  * @Author: Aina
  * @Date: 2023-12-23 15:55:18
  * @LastEditors: Aina
- * @LastEditTime: 2025-01-24 21:01:19
+ * @LastEditTime: 2025-01-25 09:59:17
  * @FilePath: /chuanchuan/assets/app/App.ts
  * @Description: 
  * 
@@ -13,6 +13,7 @@ import { sys, _decorator, Component, Sprite, Label, lerp, assetManager, UITransf
 import { EDITOR } from "cc/env";
 import { initData } from "./config/GameConfig";
 import { ResourceManager } from "../common/scripts/ResourceManager";
+import { ButtonSoundOverride } from "../common/scripts/ButtonSoundOverride";
 // 加载主包
 let isEnter = false;
 (function () {
@@ -53,35 +54,7 @@ export class App extends Component {
     
     private _bundleLoaded: boolean = false;
     private _loadedScene: any = null;
-    
-    // private loadBundles(bundleNames: string[]) {
-    //     // console.log("load bundles " + Date.now());
-    //     let loadedCount = 0;
-    //     bundleNames.forEach(bundleName => {
-    //         ResourceManager.loadBundle(bundleName, (err, bundle) => {
-    //             if (err) {
-    //                 console.error("加载Bundle失败:", err);
-    //             } else {
-    //                 loadedCount++;
-    //                 console.log(bundleName,"load success" + Date.now())
-    //                 if (loadedCount === bundleNames.length) {
-    //                     console.log("bundleNames load success" + Date.now())
-    //                 }
-    //                 if (bundleName === "main2") {
-    //                     bundle.loadScene("Main", (err, scene) => {
-    //                         if (err) {
-    //                             console.error("Failed to load MainScene:", err);
-    //                             return;
-    //                         }
-    //                         this._bundleLoaded = true;
-    //                         this._loadedScene = scene;
-    //                         this.tryEnterScene();
-    //                     });
-    //                 }
-    //             }
-    //         });
-    //     });
-    // }
+
     private loadBundles(bundleNames: string[]) {
         // Load game bundle first
         ResourceManager.loadBundle("game", (err, bundle) => {
@@ -141,6 +114,8 @@ export class App extends Component {
         this.followRatio = Bg.getChildByName("FollowRatio")!
         this.ratioText = Bg.getChildByName("RatioText")!.getComponent(Label)!
         this.updateRatio()
+        // 初始化按钮音效
+        ButtonSoundOverride.instance;
     }
     private updateRatio() {
         this.sp.width = Math.floor(this.ratio * 321)

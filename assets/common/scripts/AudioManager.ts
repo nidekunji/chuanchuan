@@ -61,6 +61,7 @@ export class AudioManager extends Component {
     }
 
     private isBackgroundMusicEnabled(): boolean {
+        console.error("isBackgroundMusicEnabled", LocalStorageManager.getItem(LocalCacheKeys.BackgroundMusic))
         const enabled = LocalStorageManager.getItem(LocalCacheKeys.BackgroundMusic);
         return enabled === 'true';
     }
@@ -123,5 +124,10 @@ export class AudioManager extends Component {
         if (!this.soundEffectsSource) return;
 
         this.soundEffectsSource.volume = enabled ? 1 : 0;
+    }
+    public playButtonClick() {
+        if (!this.soundEffectsSource || !this.isSoundEffectsEnabled()) return;
+        console.log("playButtonClick")
+        this.playSoundEffect('click');
     }
 }

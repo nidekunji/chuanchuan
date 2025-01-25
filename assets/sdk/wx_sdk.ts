@@ -153,6 +153,7 @@ export class wx_sdk implements isdk {
         })
         this.infoButton = button;
     }
+   
 
     setInfoButonVisible(f: boolean): void {
         if (this.infoButton) {
@@ -228,6 +229,9 @@ export class wx_sdk implements isdk {
     protected videoAdCallback: (result: number) => void = null;
     protected callVedioCallback(r: number) {
         if (this.videoAdCallback) {
+            if (window['cc'] && window['cc'].audioEngine) {
+                window['cc'].audioEngine.resumeAll();
+            }
             this.videoAdCallback(r)
             this.videoAdCallback = null;
         }
