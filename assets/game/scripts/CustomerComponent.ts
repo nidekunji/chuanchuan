@@ -2,7 +2,7 @@
  * @Author: Aina
  * @Date: 2025-01-10 04:54:34
  * @LastEditors: Aina
- * @LastEditTime: 2025-01-23 18:34:13
+ * @LastEditTime: 2025-01-25 11:38:46
  * @FilePath: /chuanchuan/assets/game/scripts/CustomerComponent.ts
  * @Description: 
  * 
@@ -151,14 +151,17 @@ export class CustomerComponent extends Component {
         this.foodNode.active = true;
         Tween.stopAllByTarget(this.foodNode);
         const randomScaleX = this.foodScaleX
-        let time = 0.2;
+        let time = 0.5;
         tween(this.foodNode)
+        .to(time, { scale: new Vec3(1, 1, 1) })
         // 放大
-        .to(time, { scale: new Vec3(1.2*randomScaleX, 1.2, 1.2) })
+        .to(0.2, { scale: new Vec3(1.2*randomScaleX, 1.2, 1.2) })
+        .to(0.2, { scale: new Vec3(1*randomScaleX, 1, 1) })
+        .to(0.2, { scale: new Vec3(1.2*randomScaleX, 1.2, 1.2) })
+        .to(0.2, { scale: new Vec3(1*randomScaleX, 1, 1) })
         // 缩小
-        .to(time, { scale: new Vec3(0.8*randomScaleX, 0.8, 0.8) })
-        // 回到原始尺寸
-        .to(time, { scale: new Vec3(0.5, 0.5, 0.5) })
+        .delay(0.5)
+      
         // 循环
         .union()
         .repeatForever()

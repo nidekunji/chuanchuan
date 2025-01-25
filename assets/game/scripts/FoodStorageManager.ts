@@ -3,6 +3,7 @@ import { StorageSlot } from '../../core/scripts/define/Types';
 import { ResourceManager } from '../../common/scripts/ResourceManager';
 import { LocalStorageManager } from '../../common/scripts/LocalStorageManager';
 import { LocalCacheKeys } from '../../app/config/GameConfig';
+import { FoodItem } from './FoodItem';
 
 const { ccclass, property } = _decorator;
 
@@ -17,22 +18,22 @@ export class FoodStorageManager extends Component {
     // 存放区数据：固定6个位置的数组
     private storageSlots: StorageSlot[] = [];
     start() {
-        this.init();
+       // this.init();
     }
     /**
      * 初始化存放区
      */
-    public init(cachedData?: StorageSlot[]) {
-        const loadedData = cachedData || this.loadCachedStorageData();
-        
-        this.storageSlots = loadedData || Array(this.TOTAL_SLOTS).fill(null).map((_, index) => ({
-            id: index,                             // 位置编号
-            isUnlocked: index < this.INITIAL_UNLOCKED,  // 前3个默认解锁
-            type: 0                                     // 初始为空
-        }));
-        this.node.removeAllChildren();
-        this.updateAllSlots();
+    public init() {
+       
+        const loadedData = this.loadCachedStorageData();
+        this.reset(); // 先读缓存再清空
+        if (loadedData) {
+            console.error(loadedData, "存放区有数据");
+            this.storageSlots = loadedData;
+            this.cacheStorageData();
+        }
         this.tableParent = find("Canvas/Center/Table")
+        this.updateAllSlots();
     }
     public clearStorageAndReinit() {
         // 清除本地缓存
@@ -57,8 +58,8 @@ export class FoodStorageManager extends Component {
      */
      private cacheStorageData() {
         const storageData = JSON.stringify(this.storageSlots);
-        console.log('cacheStorageData', this.storageSlots);
         LocalStorageManager.setItem(LocalCacheKeys.FoodStorage, storageData);
+     //   console.error(storageData, "=======storageData save save save=======");
 
     }
     private updateAllSlots() {
@@ -67,41 +68,52 @@ export class FoodStorageManager extends Component {
             this.updateSlotUI(i);
         }
     }
-    private updateSlotUI(slotId: number) {
+    private async updateSlotUI(slotId: number) {
+        // 先清除当前slot的显示
         const state = this.getSlotDisplayState(slotId);
-        if (state.locked) {
-            this.showLockIcon(slotId);
-        } else if (state.type === 0) {
-            this.showEmptySlot(slotId);
-        } else {
-            this.showFood(slotId, state.type);
+        try {
+            if (state.locked) {
+                await this.showLockIcon(slotId);
+            } else if (state.type !== 0) {
+                await this.showFood(slotId, state.type);
+            }
+            // 空格子的情况已经在开始时处理了
+        } catch (error) {
+            console.error(`Failed to update slot UI for slot ${slotId}:`, error);
         }
     }
     public findEmptySlot(): number | null {
-        return this.storageSlots.findIndex(slot => slot.isUnlocked && slot.type === 0);
+        const emptySlot = this.storageSlots.find(slot => slot.isUnlocked && slot.type === 0);
+        return emptySlot ? emptySlot.id : null;
     }
-    public getSlotPosition(slotIndex: number): Vec3 | null {
-        if (!this.tableParent || slotIndex < 0 || slotIndex >= this.tableParent.children.length) {
-            console.error(`Invalid slot index: ${slotIndex}`);
+    /**
+     * 获取指定位置的存放区位置
+     * @param slotId 位置id 1-6
+     * @returns 位置的世界坐标
+     */
+    public getSlotPosition(slotId: number): Vec3 | null {
+        if (!this.tableParent || slotId < 0 || slotId > this.tableParent.children.length) {
+            console.error(`Invalid slot index: ${slotId}`);
             return null;
         }
+
     
         // 获取对应桌子节点
-        const tableNode = this.tableParent.children[slotIndex];
+        const tableNode = this.tableParent.children[slotId-1];
         if (!tableNode) {
-            console.error(`Table node not found for slot ${slotIndex}`);
+            console.error(`Table node not found for slot ${slotId}`);
             return null;
         }
     
         // 将桌子的世界坐标转换为 node 的本地坐标
         const targetPosition = this.node.getComponent(UITransform)
             .convertToNodeSpaceAR(tableNode.getWorldPosition());
-        
+        targetPosition.y +=5;
         return targetPosition;
     }
     private loadPrefab(type: 'Lock' | 'Food', slotId: number, foodType?: number): Promise<void> {
         return new Promise((resolve, reject) => {
-            const prefabPath = type === 'Lock' ? 'prefab/Lock' : `prefab/Food_${foodType}`;
+            const prefabPath = type === 'Lock' ? 'prefab/Lock' : `prefab/Food`;
             
             ResourceManager.loadResourceFromBundle('game', prefabPath, Prefab, (err, prefab) => {
                 if (err || !prefab) {
@@ -110,21 +122,21 @@ export class FoodStorageManager extends Component {
                     return;
                 }
                 const node = instantiate(prefab);
-                node.name = `food_${type}`;
-
-                // 移除现有节点
-                const existingNode = this.node.children[slotId];
-                if (existingNode) {
-                    existingNode.removeFromParent();
-                }
-                
+                if (foodType) {
+                    node.name = `food_${foodType}`;
+                    let com = node.getComponent(FoodItem)
+                    if (com) {
+                        com.updateFoodImageByType(foodType);
+                    } else {
+                        console.error('FoodItem component not found');
+                    }
+                } 
+                node['id'] = slotId+1;
+                node.active = true;
                 // 获取对应表格位置的世界坐标
-                const tableSlot = this.tableParent.children[slotId];
-                if (tableSlot) {
-                    const worldPos = tableSlot.worldPosition;
-                    // 将世界坐标转换为节点的本地坐标
-                    const localPos = this.node.getComponent(UITransform).convertToNodeSpaceAR(worldPos);
-                    node.setPosition(localPos);
+                const targetPosition = this.getSlotPosition(slotId+1);
+                if (targetPosition) {
+                    node.setPosition(targetPosition);
                 }
                 
                 this.node.addChild(node);
@@ -139,18 +151,7 @@ export class FoodStorageManager extends Component {
 
     private async showFood(slotId: number, foodType: number) {
         await this.loadPrefab('Food', slotId, foodType);
-    }
-    private showEmptySlot(slotId: number) {
-        // 实现显示空格子的逻辑
-        if (!this.node) {
-            return;
-        }
-        if (this.node.children.length <= slotId) {
-            return;
-        }
-        if (this.node.children[slotId]) {
-            this.node.children[slotId].removeFromParent();
-        }
+       
     }
     /**
      * 解锁位置的存放区
@@ -163,42 +164,52 @@ export class FoodStorageManager extends Component {
         if (nextUnlocked) {
             nextUnlocked.isUnlocked = true;
             this.cacheStorageData();
+            this.updateLockedSlotUI(nextUnlocked.id);
             return nextUnlocked.id;
         }
         return -1;
     }
+    private updateLockedSlotUI(id: number) {
+        for (let i = 0; i < this.node.children.length; i++) {
+            const child = this.node.children[i];
+            if (child['_id'] == String(id)) {
+                child.active = false;
+                break;
+            }
+        }
+    }
+
+    
     /**
      * 存放食物
      * @param foodType 食物类型
      * @returns 存放位置的id，失败返回-1
      */
-    public storeFood(foodType: number): number {
+    public async storeFood(foodType: number, id: Number): Promise<number> {
         const emptySlot = this.storageSlots.find(slot => 
-            slot.isUnlocked && slot.type === 0
+            slot.isUnlocked && slot.type === 0 && slot.id === id
         );
         
         if (emptySlot) {
+            // 先更新数据
             emptySlot.type = foodType;
-            this.cacheStorageData(); // 添加缓存
-            return emptySlot.id;
+            this.cacheStorageData();
         }
         return -1;
     }
 
     /**
      * 从指定位置取走食物
-     * @param slotId 位置id
-     * @returns 食物类型，0表示失败
+     * @param foodType 食物类型
+     * @returns 食物类型，0表示失败 这里不更新UI UI节点需要执行动画
      */
-    public takeFoodFromSlot(foodType: number): number {
+    public async takeFoodFromSlot(foodType: number, id: number): Promise<number> {
         const slot = this.storageSlots.find(slot => 
-            slot.isUnlocked && slot.type === foodType
+            slot.isUnlocked && slot.type === foodType && slot.id === id
         );
-        
         if (slot) {
             slot.type = 0;
             this.cacheStorageData();
-            return foodType;
         }
         return 0;
     }
@@ -210,12 +221,9 @@ export class FoodStorageManager extends Component {
         if (slotIndex === -1) {
             return null;
         }
-        // Directly find the food node by its name pattern
-      //  console.log('findFoodTypeSlot', this.storageSlots, slotIndex, foodType);
         const foodNodeName = `food_${foodType}`;
         return this.node.getChildByName(foodNodeName) || null;
     }
-
     /**
      * 获取存放区状态
      * @param id 可选，指定位置id。不传则返回所有位置状态
@@ -264,11 +272,17 @@ export class FoodStorageManager extends Component {
      * 重置存放区（保持解锁状态）
      */
     public reset() {
-        this.storageSlots.forEach((slot, index) => {
-            slot.type = 0;  // 清空食物
-            slot.isUnlocked = index < this.INITIAL_UNLOCKED;  // 重置解锁状态为初始状态
+        this.node.removeAllChildren();
+        this.storageSlots = Array(this.TOTAL_SLOTS).fill(null).map((_, index) => {
+            const slot = {
+                id: index+1,
+                type: 0,
+                isUnlocked: index < this.INITIAL_UNLOCKED
+            };
+           // console.log(`Slot ${index} unlocked status:`, slot.isUnlocked); // 添加调试日志
+            return slot;
         });
+      //  console.log('All slots after reset:', this.storageSlots); // 添加调试日志
         this.cacheStorageData(); // 更新缓存
-        this.updateAllSlots(); // 更新UI显示
     }
 }

@@ -2,7 +2,7 @@
  * @Author: Aina
  * @Date: 2024-12-19 01:17:40
  * @LastEditors: Aina
- * @LastEditTime: 2025-01-25 10:26:29
+ * @LastEditTime: 2025-01-26 00:00:23
  * @FilePath: /chuanchuan/assets/main/script/Main.ts
  * @Description: 
  * 
@@ -39,6 +39,7 @@ export class HomeButtonAnimation extends Component {
             director.addPersistRootNode(audioManagerNode);
             this.checkAndPlayBackgroundMusic();
         }
+       // LocalStorageManager.removeItem(LocalCacheKeys.FoodStorage);
        // LocalStorageManager.clearAllCache();
         sdk.p.showBanner(0, SDKDir.BOTTOM_MID)
     
@@ -46,7 +47,6 @@ export class HomeButtonAnimation extends Component {
             this.rankNode.active = r == ResultState.YES;
             if (r == ResultState.NO) {
                 let style = getLeftTopRect(this.rankNode)
-                console.log(style, "style")
                 style.width = 153
                 style.height = 153
                 sdk.p.createInfoButton({
@@ -147,6 +147,7 @@ export class HomeButtonAnimation extends Component {
     showRank() {
         const uiManager = UIManager.instance;
         UIManager.instance.openUI(uiLoadingConfigs.RankUIUrl);
+        sdk.p.destroyInfoButton()
     }
 
     onRankBtnClick() {

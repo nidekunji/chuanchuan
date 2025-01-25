@@ -4,9 +4,10 @@ import { NodePool } from '../../common/scripts/NodePool'; // 确保路径正确
 import { GameBoard } from '../script/Test';
 import { FoodItem } from './FoodItem';
 import { CustomerState } from '../../core/scripts/define/Enums';
-import { CustomerMoveConfig, EnterQueueMoveConfig, QueueMoveConfig } from '../../app/config/GameConfig';
+import { CustomerMoveConfig, EnterQueueMoveConfig, LocalCacheKeys, QueueMoveConfig } from '../../app/config/GameConfig';
 import { StorageSlot } from '../../core/scripts/define/Types';
 import { FoodStorageManager } from './FoodStorageManager';
+import { LocalStorageManager } from '../../common/scripts/LocalStorageManager';
 
 const { ccclass, property } = _decorator;
 
@@ -96,13 +97,46 @@ export class CustomerManager extends Component {
         }
         this._GameBoard = gameBoard;
         this.gemGroupCountMap = gemGroupCountMap;
+        
+         this.addStorageItem();
         // 初始化顾客类型计数
         this.initCustomerTypeCount();
          // 重置完成
          this.isResetting = false;
           // 初始化顾客管理器
           this.initCustomerManager();
-    }   
+    } 
+    // 客人总数需要加上  
+    addStorageItem() {
+        let foodStorage = LocalStorageManager.getItem(LocalCacheKeys.FoodStorage);
+        if (foodStorage) {
+            try {
+                // 确保我们有一个对象数组而不是字符串
+                let foodStorageArray = typeof foodStorage === 'string' 
+                    ? JSON.parse(foodStorage) 
+                    : foodStorage;
+    
+                // 创建一个计数映射
+                let typeCountMap = {};
+                
+                // 遍历存储数组并统计每种类型的数量
+                foodStorageArray.forEach(slot => {
+                    if (slot.type > 0) {  // 只统计有效的食物类型（大于0）
+                        typeCountMap[slot.type] = (typeCountMap[slot.type] || 0) + 1;
+                    }
+                });
+    
+                // 将存储区的食物数量添加到总计数中
+                for (let type in typeCountMap) {
+                    this.gemGroupCountMap[type] = (this.gemGroupCountMap[type] || 0) + typeCountMap[type];
+                }
+    
+                console.log("Updated gemGroupCountMap with storage items:", this.gemGroupCountMap);
+            } catch (error) {
+                console.error("Error parsing food storage data:", error);
+            }
+        }
+    }
     /**
      * 清除食物节点
      */
@@ -123,24 +157,44 @@ export class CustomerManager extends Component {
             console.error("gemGroupCountMap is null");
             this.customersToServeByType = {1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0};
         }
+    //    console.log(this.gemGroupCountMap, "gemGroupCountMap");
     }
     /**
      * 初始化顾客管理器
      */
     initCustomerManager() {
-        let waitingCount = 0;
-        let queueCount = 0;
+        // 检查是否有缓存的等待区数据
+        const cachedWaitingData = LocalStorageManager.getItem(LocalCacheKeys.WaitingArea);
+        
+        if (cachedWaitingData) {
+            // 使用缓存数据初始化等待区
+            const waitingDataObj = JSON.parse(cachedWaitingData);
+            console.error(waitingDataObj, "waitingDataObj");
+            for (const key in waitingDataObj) {
+                if (waitingDataObj[key]) {
+                    this.createCustomer(true, waitingDataObj[key], parseInt(key));
+                }
+            }
+        } else {
+            // 如果没有缓存数据，按原来的逻辑初始化等待区
+            let waitingCount = 0;
+            Object.keys(this.customersToServeByType).forEach(key => {
+                if (waitingCount < 6) {
+                    waitingCount++;
+                    this.createCustomer(true, parseInt(key), waitingCount);
+                }
+            });
+        }
+    
+        // 初始化排队区（保持不变）
         let totalCount = 0;
-        Object.keys(this.customersToServeByType).forEach((key, index) => {
+        let queueCount = 0;
+        Object.keys(this.customersToServeByType).forEach(key => {
             const customerType = parseInt(key);
             totalCount += this.customersToServeByType[customerType];
-            if (waitingCount < 6) {
-                waitingCount++;
-                this.createCustomer(true, customerType, waitingCount); // 生成等待区的顾客
-            } 
             if (totalCount > 9 && queueCount < 3) {
                 queueCount++;
-                this.createCustomer(false, customerType, queueCount); // 生成排队区的顾客
+                this.createCustomer(false, customerType, queueCount);
             }
         });
     }
@@ -168,7 +222,7 @@ export class CustomerManager extends Component {
      * @returns 
      */
     
-    createCustomer(isWaiting: boolean, customerType: number, index: number) {
+    createCustomer(isWaiting: boolean, customerType: number, index?: number) {
         if (this.isResetting) {
             console.log('系统正在重置中，跳过创建顾客');
             return;
@@ -183,8 +237,8 @@ export class CustomerManager extends Component {
         newCustomerNode.setParent(this.waitingPoint);
         this.updateCustomerState(customerComp, CustomerState.None);
         if (isWaiting) {
-         //   console.log('顾客等待区初始化========', customerType);
-            this.initWaitingCustomer(customerComp, customerType);
+          //  console.log('顾客等待区初始化========', customerType, index);
+            this.initWaitingCustomer(customerComp, customerType, index);
         } else {
             console.log('顾客排队区初始化========', customerType);
             
@@ -193,9 +247,21 @@ export class CustomerManager extends Component {
     }
     /**
      * 初始化等待区顾客
+     * @param customerComp 顾客组件
+     * @param customerType 顾客类型
+     * @param index 顾客位置索引
+     * @returns 
      */
-    private initWaitingCustomer(customerComp: CustomerComponent, customerType: number) {
-        const standPointId = this.findEmptyWaitingId();
+    private initWaitingCustomer(customerComp: CustomerComponent, customerType: number, index?: number) {
+        let standPointId = 0
+        if (index && this.isWaitingPositionEmpty(index)) {
+          //  console.log('有缓存空位，直接使用', index, "顾客类型：", customerType);
+            standPointId = index;
+        } else {
+          //  console.log('没有缓存空位，需要找空位', index);
+            standPointId = this.findEmptyWaitingId();
+        }
+       
         if (standPointId === null) return;
         // 初始化顾客并更新状态
         customerComp.init(customerType, standPointId, true);
@@ -220,21 +286,6 @@ export class CustomerManager extends Component {
         this.updateCustomerState(customerComp, CustomerState.JoiningQueue);
     }
     findAreaCustomer(type: number): CustomerComponent | null {
-        console.log('Looking for customer type:', type);
-        console.log('Waiting area status:');
-        for (const key in this.waiting) {
-            const customer = this.waiting[key];
-            if (customer) {
-                console.log(`Position ${key}:`, {
-                    type: customer.customerType,
-                    state: CustomerState[customer.currentState],
-                    tableId: customer.tableId
-                });
-            } else {
-                console.log(`Position ${key}: empty`);
-            }
-        }
-    
         const matchingCustomers = [];
         for (const key in this.waiting) {
             const customer = this.waiting[key];
@@ -282,12 +333,10 @@ export class CustomerManager extends Component {
              this.checkTable(customer);
              callback && callback();
             break;
-            case CustomerState.Eating:
-                
-                    this.handleEatingState(customer, node);
-                    callback && callback();
-                 
-                break;
+        case CustomerState.Eating:
+            this.handleEatingState(customer, node);
+            callback && callback();
+            break;
         case CustomerState.WaitingEat:
             // 处理顾客等待吃食物逻辑
              // 如果没有找到匹配的顾客，将食物放置到空桌子上
@@ -368,6 +417,7 @@ private createFoodNode(
     if (!foodNode) return null;
 
     foodNode.setParent(this.foodParentNode);
+  //  foodNode.setSiblingIndex(0);
     foodNode.active = true;
     foodNode.setPosition(startPosition);
     foodNode.name = `food_${customerType}`;
@@ -481,6 +531,7 @@ private handlePlaceFoodOnEmptyTable(type: number, node: Node) {
         console.error("No empty storage slot available");
         return;
     }
+    console.error("存放食物的空位id", emptySlot)
 
     // 获取桌子的存储位置的世界坐标
     const targetPosition = foodStorageManager.getSlotPosition(emptySlot);
@@ -496,11 +547,20 @@ private handlePlaceFoodOnEmptyTable(type: number, node: Node) {
         type,
         () => {
             // 在食物到达目标位置后，将其添加到存储管理器中
-            foodStorageManager.storeFood(type);
-            console.log(`Food placed in storage slot ${emptySlot}`);
+            foodStorageManager.storeFood(type, emptySlot);
+            foodNode['isFlyingToStorage'] = false;
+            console.error(`Food placed in storage slot ${emptySlot}`);
+            let customer = this.findAreaCustomer(type);
+            if (customer) {
+                this.updateCustomerState(customer, CustomerState.Idle);
+            }
         },
         true // 设置为静态食物
     );
+    if (foodNode) {
+        foodNode['isFlyingToStorage'] = true;
+        foodNode['id'] = emptySlot;
+    }
 }
 
     customerReturn(customer: CustomerComponent) {
@@ -509,32 +569,45 @@ private handlePlaceFoodOnEmptyTable(type: number, node: Node) {
              this.updateWaitingArea(customer, -1);
             let waypoints = [...CustomerMoveConfig.waypoints[customer.tableId]];
             customer.movement.startMovingThroughWaypoints(CustomerMoveConfig.speed, waypoints, ()=>{
-               // console.log('customer return finished');    
+               this.recycleCustomer(customer.node);
             });
         }
     }
-    updateWaitingArea(customer: CustomerComponent, change: number) {
-        if (change < 0) {
-            Object.keys(this.waiting).forEach(key => {
-                if (this.waiting[key] === customer) {
-                    this.waiting[key] = null;
-                }
-            });
-        } else if (change > 0) {
-            const position = Object.keys(this.waiting).find(key => this.waiting[key] === null);
-            if (position) {
-                this.waiting[position] = customer;
+
+updateWaitingArea(customer: CustomerComponent, change: number) {
+    if (change < 0) {
+        Object.keys(this.waiting).forEach(key => {
+            if (this.waiting[key] === customer) {
+                this.waiting[key] = null;
             }
+        });
+    } else if (change > 0) {
+        const position = Object.keys(this.waiting).find(key => this.waiting[key] === null);
+        if (position) {
+            this.waiting[position] = customer;
         }
-        // Log current waiting and queue customers
-        console.log('Current waiting customers:', 
-            Object.keys(this.waiting)
-                .map(key => this.waiting[key])
-                .filter(c => c !== null)
-                .map(c => c.customerType)
-        );
-     console.log('Current queue customers:', this.customersToServeByType);
     }
+    // Create a simplified data structure for storage
+    const waitingAreaData = {};
+    Object.keys(this.waiting).forEach(key => {
+        const customer = this.waiting[key];
+        if (customer) {
+            waitingAreaData[key] = customer.customerType;
+        }
+    });
+    console.log(waitingAreaData, "waitingAreaData");
+    // Store the simplified data
+    LocalStorageManager.setItem(LocalCacheKeys.WaitingArea, JSON.stringify(waitingAreaData));
+
+    // Debug logging
+    console.log('Current waiting customers:', 
+        Object.keys(this.waiting)
+            .map(key => this.waiting[key])
+            .filter(c => c !== null)
+            .map(c => c.customerType)
+    );
+    console.log('Current queue customers:', this.customersToServeByType);
+}
     /**
      * 
      * @returns 返回等待区id
@@ -543,13 +616,16 @@ private handlePlaceFoodOnEmptyTable(type: number, node: Node) {
         const emptyPositionKey = Object.keys(this.waiting).find(key => this.waiting[key] === null);
         return emptyPositionKey ? parseInt(emptyPositionKey) : null;
     }
+    private isWaitingPositionEmpty(position: number): boolean {
+        return this.waiting[position] === null;
+    }
  
     /**
      * 将第一个排队区顾客移动到等待区
      */
     moveFirstQueueCustomerToWaiting() {
         let emptyId = this.findEmptyWaitingId();
-        console.log('moveFirstQueueCustomerToWaiting', this.queue, emptyId);
+       // console.log('moveFirstQueueCustomerToWaiting', this.queue, emptyId);
         if (this.queue.length > 0 && emptyId) {
             let firstQueueCustomer = this.queue.shift();
             firstQueueCustomer.tableId = emptyId;
@@ -575,7 +651,8 @@ private flyFoodToCustomer(customer: CustomerComponent, node: Node) {
         const targetPosition = this.getCustomerTablePosition(customer);
         // 执行食物飞行动画
         this.animateFoodFlight(node, targetPosition, customer, ()=>{
-           let success = foodStorage.takeFoodFromSlot(customerType); // 更改存放区数据
+            let id = Number(node['_id'] || 0);
+           let success = foodStorage.takeFoodFromSlot(customerType, id); // 更改存放区数据
            if (success) {
             console.error("foodStorage.takeFoodFromSlot success");
             this.recycleFood(node);
@@ -627,13 +704,13 @@ private animateFoodFlight(foodNode: Node, targetPosition: Vec3, customer: Custom
     }, targetPosition);
 }
     checkTable(customer: CustomerComponent) {
+        if (!customer) return;
         let customerType = customer.customerType;
         let customerState = customer.currentState;
         if (customerState === CustomerState.Idle) {
             const foodStorage = this.foodParentNode.getComponent(FoodStorageManager);
             const foodNode = foodStorage.findFoodTypeSlot(customerType);
-
-            if (foodNode !== null) {
+            if (foodNode !== null && !foodNode['isFlyingToStorage']) {  // 只检查是否正在飞向存放区
                 console.error("checkTable foodNode found", foodNode.getComponent(FoodItem));
                 this.updateCustomerState(customer, CustomerState.EatingWatingEat, null, foodNode);
                 return;
@@ -674,10 +751,34 @@ private animateFoodFlight(foodNode: Node, targetPosition: Vec3, customer: Custom
     }
     recycleFood(foodNode: Node) {
         if (foodNode) {
-            this.nodePool.release(this.foodPrefab, foodNode); // 将食物节点放回对象池
+            // 从 foodNodes 数组中移除
+            const index = this.foodNodes.indexOf(foodNode);
+            if (index > -1) {
+                this.foodNodes.splice(index, 1);
+            }
+    
+            // 将食物节点放回对象池
+            this.nodePool.release(this.foodPrefab, foodNode);
+    
+            // 获取并检查存储区数据
+            const foodStorage = this.foodParentNode.getComponent(FoodStorageManager);
+            if (foodStorage) {
+                const storageSlots = foodStorage.getStorageSlot();
+                // 只输出有食物类型的槽位
+                let occupiedSlots = [];
+                if (Array.isArray(storageSlots)) {
+                    occupiedSlots = storageSlots.filter(slot => slot.type > 0);
+                } else if (storageSlots.type > 0) {
+                    occupiedSlots = [storageSlots];
+                }
+                console.log("Occupied storage s lots:", occupiedSlots);
+            }
+
+            // 检查节点是否还在场景中
+            console.log("Remaining food nodes in parent:", this.foodParentNode.children.length);
         }
-        console.error("recycleFood finished", this.foodParentNode.children);
     }
+    
     public hasCustomerNeedingFood(type: number): boolean {
         return this.customersToServeByType[type] > 0;
     }

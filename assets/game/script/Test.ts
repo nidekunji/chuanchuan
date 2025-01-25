@@ -135,7 +135,6 @@ export class GameBoard extends Component {
                 this.initBoard();
             }
             this.customerManager.init(this, this.gemGroupCountMap, this.nodePool);
-          
         }, 0);
     }
     initManager() {
@@ -160,10 +159,7 @@ export class GameBoard extends Component {
             console.error("EventDispatcher not found!!!");
         }
 
-        if (this.customerManagerNode) {
-        // 顾客管理器
-            this.customerManager = this.customerManagerNode.getComponent(CustomerManager);
-        }
+       
         // 道具
         this.propManager = this.node.getComponent(PropManager);
         this.propManager.init(this);
@@ -179,6 +175,10 @@ export class GameBoard extends Component {
             this.foodStorageManager.init();
         } else {
             this.tipUI.showTips("FoodStorageManager not found"); 
+        }
+        if (this.customerManagerNode) {
+            // 顾客管理器
+            this.customerManager = this.customerManagerNode.getComponent(CustomerManager);
         }
        
     }
@@ -689,12 +689,13 @@ public async handlePushAndMatch(moveResult: { from: { x: number, y: number }, to
                     matchGroup.forEach(pos => {
                         console.log(`位置 (${pos.x}, ${pos.y}) - 类型: ${this.gems[pos.y][pos.x]}`);
                     });
-                    // 执行消除并更新数据
-                    await this.removeMatchGroup(matchGroup);
+                    await this.handleMatchGroupElimination(matchGroup, gemType);
+                    // // 执行消除并更新数据
+                    // await this.removeMatchGroup(matchGroup);
     
-                    // 打印消除后的棋盘状态
-                    console.log('\n消除后的棋盘状态:');
-                    this.printBoardState();
+                    // // 打印消除后的棋盘状态
+                    // console.log('\n消除后的棋盘状态:');
+                    // this.printBoardState();
     
                     return true; // 返回 true 表示发生了消除
                 }
@@ -750,6 +751,36 @@ public async handlePushAndMatch(moveResult: { from: { x: number, y: number }, to
         }
         return null;
     }
+    private async handleMatchGroupElimination(matchGroup: { x: number, y: number }[], clickedGemType: number): Promise<void> {
+        this.currentState = GameState.Processing;
+        try {
+            // 1. 检查是否有顾客需要这种类型的食物
+            if (this.customerManager.findAreaCustomer(clickedGemType)) {
+                // 如果有顾客需要，正常执行消除逻辑
+                await this.removeMatchGroup(matchGroup);
+            } else {
+                // 2. 检查存放区是否有空位
+                if (!this.foodStorageManager) {
+                    this.tipUI.showTips("FoodStorageManager not found"); 
+                    return;
+                }
+                if (this.foodStorageManager.hasAvailableSlot()) {
+                    await this.removeMatchGroup(matchGroup);
+                } else {
+                    // 3. 检查是否有未解锁的存放区
+                    if (this.foodStorageManager.hasLockedSlots()) {
+                        this.tipUI.showTips("存放区已满，观看视频解锁新的存放区");
+                        return;
+                    } else {
+                        this.tipUI.showTips("存放区已满，请先清理存放区");
+                        return;
+                    }
+                }
+            }
+        } finally {
+            this.currentState = GameState.Idle;
+        }
+    }
     public async onGemClicked(event: any) {
       //  console.log('====onGemClicked=====', this.currentState);
         try {
@@ -784,45 +815,26 @@ public async handlePushAndMatch(moveResult: { from: { x: number, y: number }, to
                     this.highlightGem(gem, true);
                     this.tipUI.showTips("请选择第二个要交换的宝石");
                 } else {
-                    // 选择第二个宝石，执行交换
-                    await this.executeExchange(this.exchangeState.firstPos!, pos);
-                    
-                    // 重置交换状态
-                    this.resetExchangeState();
+                   // 检查是否点击了同一个宝石
+                    if (this.exchangeState.firstPos.x === pos.x && 
+                        this.exchangeState.firstPos.y === pos.y) {
+                        // 如果是同一个宝石，取消选择
+                        this.resetExchangeState();
+                        this.tipUI.showTips("已取消选择");
+                    } else {
+                        // 选择第二个宝石，执行交换
+                        await this.executeExchange(this.exchangeState.firstPos!, pos);
+                        
+                        // 重置交换状态
+                        this.resetExchangeState();
+                    }
                 }
                 return;
             }
             // 检查包含点击位置的匹配组
             const matchGroup = this.findMatchGroupAtPosition(pos.x, pos.y, clickedGemType);
             if (matchGroup.length >= 3) {
-                this.currentState = GameState.Processing;
-                try {
-                    // 1. 检查是否有顾客需要这种类型的食物
-                    if (this.customerManager.findAreaCustomer(clickedGemType)) {
-                        // 如果有顾客需要，正常执行消除逻辑
-                        await this.removeMatchGroup(matchGroup);
-                    } else {
-                        // 2. 检查存放区是否有空位
-                        if (!this.foodStorageManager) {
-                            this.tipUI.showTips("FoodStorageManager not found"); 
-                            return;
-                        }
-                        if (this.foodStorageManager.hasAvailableSlot()) {
-                            await this.removeMatchGroup(matchGroup);
-                        } else {
-                            // 3. 检查是否有未解锁的存放区
-                            if (this.foodStorageManager.hasLockedSlots()) {
-                                this.tipUI.showTips("存放区已满，观看视频解锁新的存放区");
-                                return;
-                            } else {
-                                this.tipUI.showTips("存放区已满，请先清理存放区");
-                                return;
-                            }
-                        }
-                    }
-                } finally {
-                    this.currentState = GameState.Idle;
-                }
+                await this.handleMatchGroupElimination(matchGroup, clickedGemType);
             } else {
                 this.currentState = GameState.Animating;
                 try {
@@ -974,8 +986,8 @@ public countEmptySlots(gems: { x: number, y: number }[], direction: { dx: number
         return new Vec3(posX, posY, 0);
     }
     async updateGemsPositions(moveResult: { from: { x: number, y: number }, to: { x: number, y: number } }[]) {
-        console.log('=== Starting Position Update ===');
-        console.log('Move result:', moveResult);
+      //  console.log('=== Starting Position Update ===');
+     //   console.log('Move result:', moveResult);
         // 先创建一个临时数组来存储新的状态
         const tempGems = this.gems.map(row => [...row]);
         const tempBoard = this.board.map(row => [...row]);
@@ -992,7 +1004,7 @@ public countEmptySlots(gems: { x: number, y: number }[], direction: { dx: number
             const gemNode = this.board[move.from.y][move.from.x];
             const gem = gemNode.getComponent(Gem);
 
-            console.log(`Moving gem type ${gemType} from (${move.from.x}, ${move.from.y}) to (${move.to.x}, ${move.to.y})`);
+         //   console.log(`Moving gem type ${gemType} from (${move.from.x}, ${move.from.y}) to (${move.to.x}, ${move.to.y})`);
 
             // 在临时数组中更新位置
             tempGems[move.to.y][move.to.x] = gemType;
@@ -1014,20 +1026,20 @@ public countEmptySlots(gems: { x: number, y: number }[], direction: { dx: number
             gem.init(gemData);
             gemNode.setPosition(newWorldPos);
         });
-        console.log('tempGems', tempGems);
-        console.log('tempBoard', tempBoard);
+    //    console.log('tempGems', tempGems);
+     //   console.log('tempBoard', tempBoard);
         // 完成所有移动后，更新实际的数组
         this.gems = tempGems;
         this.board = tempBoard;
 
         // 验证更新
-        console.log('\nFinal board state:');
+   //     console.log('\nFinal board state:');
         for (let y = 0; y < this.boardParams.rows; y++) {
             let row = '';
             for (let x = 0; x < this.boardParams.columns; x++) {
                 row += (this.gems[y][x] || '0') + ' ';
             }
-            console.log(row);
+         //   console.log(row);
         }
     }
     // 修改 removeMatchGroup 方法确保正确更新数据
@@ -1035,7 +1047,6 @@ public countEmptySlots(gems: { x: number, y: number }[], direction: { dx: number
         try {
             this.helperManager.hideTips();
             this.currentState = GameState.Processing;
-            
             // 记录匹配
             this.matchHistory.push({
                 timestamp: Date.now(),
@@ -1120,6 +1131,7 @@ public countEmptySlots(gems: { x: number, y: number }[], direction: { dx: number
 
     // 添加打印棋盘状态的辅助方法
     private printBoardState() {
+        return
         console.log('\n当前棋盘数据:');
         for (let y = 0; y < this.boardParams.rows; y++) {
             let row = '';
@@ -1211,7 +1223,7 @@ public countEmptySlots(gems: { x: number, y: number }[], direction: { dx: number
                     move.to.y,
                     move.type
                 );
-                console.log('matchGroup', matchGroup);
+         //       console.log('matchGroup', matchGroup);
                 if (matchGroup.length >= 3) {
                     return 1; // 返回1表示发生了匹配
                 }
@@ -1221,7 +1233,7 @@ public countEmptySlots(gems: { x: number, y: number }[], direction: { dx: number
                     move.type,
                     2
                 );
-                console.log('matchGroup2', matchGroup2);
+           //     console.log('matchGroup2', matchGroup2);
                 // 检查是否有两个相邻的宝石
                 if (matchGroup2.length == 2) {
                     return 2; // 返回2表示有两个相邻的宝石
@@ -1239,7 +1251,7 @@ public countEmptySlots(gems: { x: number, y: number }[], direction: { dx: number
             for (let x = 0; x < this.boardParams.columns; x++) {
                 const matchCenter = this.canDirectlyEliminate(x, y);
                 if (matchCenter) {
-                    console.log(`Direct elimination available at (${matchCenter.x}, ${matchCenter.y})`);
+                  //  console.log(`Direct elimination available at (${matchCenter.x}, ${matchCenter.y})`);
                     return {from: matchCenter, to: matchCenter}; // Return the center position for direct click
                 }
             }
@@ -1314,6 +1326,7 @@ public countEmptySlots(gems: { x: number, y: number }[], direction: { dx: number
             boardState: this.gems,
             gemGroupCountMap: this.gemGroupCountMap,
         };
+        console.log(this.gemGroupCountMap, "groupGroupCountMap")
 
         try {
             LocalStorageManager.setItem(LocalCacheKeys.GameSave, JSON.stringify(saveData));
@@ -1347,19 +1360,19 @@ public countEmptySlots(gems: { x: number, y: number }[], direction: { dx: number
         this.score = newScore;
         this.coinLabel.string = "" + this.score;
     }
+ 
     private loadGame(): boolean {
         const saveStr = LocalStorageManager.getItem(LocalCacheKeys.GameSave);
         if (!saveStr) return false;
         try {
             const saveData: GameSaveData = JSON.parse(saveStr);
-            console.log("saveData", saveData);
+            console.error("===saveData====", saveData);
             this.matchHistory = saveData.matchHistory;
             this.updateScoreUI(saveData.score);
             this.moves = saveData.moves;
             this.gems = saveData.boardState;
             this.gemGroupCountMap = saveData.gemGroupCountMap;
             this.validateGemCounts();
-           
             let gemCount = 0;
             for (let i = 0; i < saveData.boardState.length; i++) {
                 let row = saveData.boardState[i];
@@ -1456,6 +1469,8 @@ private logPoolStatus(operation: string) {
     public resetGame() {
         // 1. 先移除存档
         LocalStorageManager.removeItem(LocalCacheKeys.GameSave);
+        LocalStorageManager.removeItem(LocalCacheKeys.FoodStorage);
+        LocalStorageManager.removeItem(LocalCacheKeys.WaitingArea);
         // 2. 确保当前状态为空闲
         this.currentState = GameState.Idle;
     

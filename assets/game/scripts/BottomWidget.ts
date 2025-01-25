@@ -2,33 +2,36 @@
  * @Author: Aina
  * @Date: 2025-01-21 23:58:47
  * @LastEditors: Aina
- * @LastEditTime: 2025-01-22 12:34:17
+ * @LastEditTime: 2025-01-25 23:38:52
  * @FilePath: /chuanchuan/assets/game/scripts/BottomWidget.ts
  * @Description: 
  * 
  * Copyright (c) 2025 by ${git_name_email}, All Rights Reserved. 
  */
-import { _decorator, Component, find, Node, UITransform } from 'cc';
+import { _decorator, Component, find, Node, UITransform, Widget, view, screen } from 'cc';
 const { ccclass, property } = _decorator;
 
 @ccclass('BottomWidget')
 export class BottomWidget extends Component {
     start() {
-        this.updateBottomPosition();
+        this.setupWidget();
     }
 
-    update(deltaTime: number) {
+    setupWidget() {
+        const canvas = find("Canvas");
+        const centerNode = canvas.getChildByName("Center");
         
-    }
-    updateBottomPosition() {
-        let canvasHeight = find("Canvas").getComponent(UITransform).contentSize.height;
-        let selfHeight = this.node.getComponent(UITransform).contentSize.height;
-        console.error("canvasHeight", canvasHeight ,-canvasHeight/2 - selfHeight);
-        // 设置位置：将节点放置在底部
-        // 由于锚点是(0.5, 0)，我们需要考虑以下因素：
-        // 1. 画布原点在中心，所以底部是 -canvasHeight/2
-        // 2. 需要加上自身高度的一半来调整位置
-        this.node.setPosition(0, -canvasHeight/2);
+        // 获取Center节点的位置和高度
+        const centerTransform = centerNode.getComponent(UITransform);
+        const centerY = centerNode.position.y;
+        const centerHeight = centerTransform.height;
+        
+        // 获取当前节点(bottom)的高度
+        const bottomTransform = this.node.getComponent(UITransform);
+        const bottomHeight = bottomTransform.height;
+        
+        // 计算并设置bottom节点的位置，使其紧贴center节点的底部
+        const bottomPosition = centerY - (centerHeight / 2) - (bottomHeight / 2);
+        this.node.setPosition(this.node.position.x, bottomPosition, this.node.position.z);
     }
 }
-

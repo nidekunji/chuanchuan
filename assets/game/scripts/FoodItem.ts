@@ -2,7 +2,7 @@
  * @Author: Aina
  * @Date: 2025-01-07 02:16:15
  * @LastEditors: Aina
- * @LastEditTime: 2025-01-23 00:15:03
+ * @LastEditTime: 2025-01-25 12:19:21
  * @FilePath: /chuanchuan/assets/game/scripts/FoodItem.ts
  * @Description: 
  * 
@@ -28,6 +28,7 @@ export class FoodItem extends Component {
     start() {
         // 初始化代码
     }
+    
     init(type: number, toTable: boolean = false, callback: () => void, target: Vec3, count: number = 1) {
         this.updateFoodImageByType(type);
         this.updateFoodLabel(count);   
