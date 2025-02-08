@@ -2,7 +2,7 @@
  * @Author: Aina
  * @Date: 2024-12-19 01:17:40
  * @LastEditors: Aina
- * @LastEditTime: 2025-01-26 00:00:23
+ * @LastEditTime: 2025-02-08 23:27:30
  * @FilePath: /chuanchuan/assets/main/script/Main.ts
  * @Description: 
  * 
@@ -39,7 +39,7 @@ export class HomeButtonAnimation extends Component {
             director.addPersistRootNode(audioManagerNode);
             this.checkAndPlayBackgroundMusic();
         }
-       // LocalStorageManager.removeItem(LocalCacheKeys.FoodStorage);
+        //LocalStorageManager.removeItem(LocalCacheKeys.FoodStorage);
        // LocalStorageManager.clearAllCache();
         sdk.p.showBanner(0, SDKDir.BOTTOM_MID)
     
@@ -58,6 +58,15 @@ export class HomeButtonAnimation extends Component {
                 })
             }
         })
+    }
+    initSetting() {
+        let level = LocalStorageManager.getItem(LocalCacheKeys.Level)
+        if (!level || level === '1') {
+            LocalStorageManager.removeItem(LocalCacheKeys.GameSave);
+            LocalStorageManager.setItem(LocalCacheKeys.BackgroundMusic, 'true');
+            LocalStorageManager.setItem(LocalCacheKeys.ShakeEffect, 'true');
+            LocalStorageManager.setItem(LocalCacheKeys.SoundEffects, 'true');
+        }
     }
     start() {
 

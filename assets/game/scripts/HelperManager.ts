@@ -23,134 +23,61 @@ export class HelperManager extends Component {
         this.fingerNode.active = false;
     }
     public checkTips(): {from: {x: number, y: number}, to: {x: number, y: number}} | null {
-        // 检查水平方向的直接消除
-        for (let y = 0; y < this._gameBoard.boardParams.rows; y++) {
-            let sameTypes: number[] = [];
-            let positions: number[] = [];
-            
-            // 收集非空格的宝石（水平方向）
-            for (let x = 0; x < this._gameBoard.boardParams.columns; x++) {
-                const gemType = this._gameBoard.gems[y][x];
-                if (gemType !== 0) {
-                    sameTypes.push(gemType);
-                    positions.push(x);
-                }
-            }
-            
-            // 检查是否有三个相同的
-            for (let i = 0; i < sameTypes.length - 2; i++) {
-                if (sameTypes[i] === sameTypes[i + 1] && sameTypes[i] === sameTypes[i + 2]) {
-                    // 返回中间位置用于点击
-                    return {
-                        from: {x: positions[i + 1], y: y},
-                        to: {x: positions[i + 1], y: y}
-                    };
-                }
-            }
-        }
-    
-        // 检查垂直方向的直接消除
-        for (let x = 0; x < this._gameBoard.boardParams.columns; x++) {
-            let sameTypes: number[] = [];
-            let positions: number[] = [];
-            
-            // 收集非空格的宝石（垂直方向）
-            for (let y = 0; y < this._gameBoard.boardParams.rows; y++) {
-                const gemType = this._gameBoard.gems[y][x];
-                if (gemType !== 0) {
-                    sameTypes.push(gemType);
-                    positions.push(y);
-                }
-            }
-            
-            // 检查是否有三个相同的
-            for (let i = 0; i < sameTypes.length - 2; i++) {
-                if (sameTypes[i] === sameTypes[i + 1] && sameTypes[i] === sameTypes[i + 2]) {
-                    // 返回中间位置用于点击
-                    return {
-                        from: {x: x, y: positions[i + 1]},
-                        to: {x: x, y: positions[i + 1]}
-                    };
-                }
-            }
-        }
-    
-        // 检查水平方向的推动
+        // 首先检查是否有可以直接消除的位置
         for (let y = 0; y < this._gameBoard.boardParams.rows; y++) {
             for (let x = 0; x < this._gameBoard.boardParams.columns; x++) {
                 const currentGem = this._gameBoard.gems[y][x];
                 if (currentGem === 0) continue;
     
-                // 检查向右推动的可能性
-                if (x < this._gameBoard.boardParams.columns - 1) {
-                    // 收集右边所有空格的位置
-                    let emptyPositions: number[] = [];
-                    let consecutiveEmptyCount = 0;
-                    for (let checkX = x + 1; checkX < this._gameBoard.boardParams.columns; checkX++) {
-                        if (this._gameBoard.gems[y][checkX] === 0) {
-                            consecutiveEmptyCount++;
-                            emptyPositions.push(checkX);
-                        } else {
-                            break;  // 遇到非空格就停止
-                        }
-                    }
+                const moveResult = [{
+                    from: {x: x, y: y},
+                    to: {x: x, y: y}
+                }];
     
-                    // 尝试推到每一个空格位置
-                    for (let i = 0; i < emptyPositions.length; i++) {
-                        const targetX = emptyPositions[i];
-                        // 计算这次推动需要多少个空格
-                        const gemsBeforeTarget = targetX - x - 1; // 目标位置到当前宝石之间的宝石数
-                        const requiredEmptySpaces = gemsBeforeTarget + 1; // 需要的空格数（包括目标位置）
-                        
-                        // 检查是否有足够的空格
-                        if (consecutiveEmptyCount >= requiredEmptySpaces) {
-                            const moveResult = [{
-                                from: {x: x, y: y},
-                                to: {x: targetX, y: y}
-                            }];
-    
-                            if (this._gameBoard.checkPushWillMatch(moveResult) === 1) {
-                                return {
-                                    from: {x: x, y: y},
-                                    to: {x: targetX, y: y}
-                                };
-                            }
-                        }
-                    }
+                // 检查当前位置是否可以直接消除
+                if (this._gameBoard.checkPushWillMatch(moveResult) === 1) {
+                    return {
+                        from: {x: x, y: y},
+                        to: {x: x, y: y}
+                    };
                 }
+            }
+        }
     
-                // 检查向左推动的可能性
-                if (x > 0) {
-                    // 收集左边所有空格的位置
-                    let emptyPositions: number[] = [];
-                    let consecutiveEmptyCount = 0;
-                    for (let checkX = x - 1; checkX >= 0; checkX--) {
-                        if (this._gameBoard.gems[y][checkX] === 0) {
-                            consecutiveEmptyCount++;
-                            emptyPositions.push(checkX);
-                        } else {
-                            break;  // 遇到非空格就停止
-                        }
-                    }
+        // 如果没有可以直接消除的，再检查可移动的情况
+        for (let y = 0; y < this._gameBoard.boardParams.rows; y++) {
+            for (let x = 0; x < this._gameBoard.boardParams.columns; x++) {
+                const currentGem = this._gameBoard.gems[y][x];
+                if (currentGem === 0) continue;
     
-                    // 尝试推到每一个空格位置
-                    for (let i = 0; i < emptyPositions.length; i++) {
-                        const targetX = emptyPositions[i];
-                        // 计算这次推动需要多少个空格
-                        const gemsBeforeTarget = x - targetX - 1; // 目标位置到当前宝石之间的宝石数
-                        const requiredEmptySpaces = gemsBeforeTarget + 1; // 需要的空格数（包括目标位置）
+                // 检查四个方向的推动
+                const directions = [
+                    {dx: 1, dy: 0},  // 右
+                    {dx: -1, dy: 0}, // 左
+                    {dx: 0, dy: 1},  // 下
+                    {dx: 0, dy: -1}  // 上
+                ];
+    
+                for (const dir of directions) {
+                    const newX = x + dir.dx;
+                    const newY = y + dir.dy;
+    
+                    // 检查新位置是否在边界内
+                    if (newX >= 0 && newX < this._gameBoard.boardParams.columns &&
+                        newY >= 0 && newY < this._gameBoard.boardParams.rows) {
                         
-                        // 检查是否有足够的空格
-                        if (consecutiveEmptyCount >= requiredEmptySpaces) {
+                        // 检查新位置是否为空
+                        if (this._gameBoard.gems[newY][newX] === 0) {
                             const moveResult = [{
                                 from: {x: x, y: y},
-                                to: {x: targetX, y: y}
+                                to: {x: newX, y: newY}
                             }];
     
+                            // 如果这个移动会产生匹配，立即返回
                             if (this._gameBoard.checkPushWillMatch(moveResult) === 1) {
                                 return {
                                     from: {x: x, y: y},
-                                    to: {x: targetX, y: y}
+                                    to: {x: newX, y: newY}
                                 };
                             }
                         }
@@ -158,83 +85,41 @@ export class HelperManager extends Component {
                 }
             }
         }
-    
-        // 检查垂直方向的推动
+        return null;
+        // 如果没有可以直接消除的，再检查可移动的情况
         for (let y = 0; y < this._gameBoard.boardParams.rows; y++) {
             for (let x = 0; x < this._gameBoard.boardParams.columns; x++) {
                 const currentGem = this._gameBoard.gems[y][x];
                 if (currentGem === 0) continue;
     
-                // 检查向上推动的可能性
-                if (y > 0) {
-                    // 收集上方所有空格的位置
-                    let emptyPositions: number[] = [];
-                    let consecutiveEmptyCount = 0;
-                    for (let checkY = y - 1; checkY >= 0; checkY--) {
-                        if (this._gameBoard.gems[checkY][x] === 0) {
-                            consecutiveEmptyCount++;
-                            emptyPositions.push(checkY);
-                        } else {
-                            break;  // 遇到非空格就停止
-                        }
-                    }
+                // 检查四个方向的推动
+                const directions = [
+                    {dx: 1, dy: 0},  // 右
+                    {dx: -1, dy: 0}, // 左
+                    {dx: 0, dy: 1},  // 下
+                    {dx: 0, dy: -1}  // 上
+                ];
     
-                    // 尝试推到每一个空格位置
-                    for (let i = 0; i < emptyPositions.length; i++) {
-                        const targetY = emptyPositions[i];
-                        // 计算这次推动需要多少个空格
-                        const gemsAboveTarget = y - targetY - 1; // 目标位置到当前宝石之间的宝石数
-                        const requiredEmptySpaces = gemsAboveTarget + 1; // 需要的空格数（包括目标位置）
+                for (const dir of directions) {
+                    const newX = x + dir.dx;
+                    const newY = y + dir.dy;
+    
+                    // 检查新位置是否在边界内
+                    if (newX >= 0 && newX < this._gameBoard.boardParams.columns &&
+                        newY >= 0 && newY < this._gameBoard.boardParams.rows) {
                         
-                        // 检查是否有足够的空格
-                        if (consecutiveEmptyCount >= requiredEmptySpaces) {
+                        // 检查新位置是否为空
+                        if (this._gameBoard.gems[newY][newX] === 0) {
                             const moveResult = [{
                                 from: {x: x, y: y},
-                                to: {x: x, y: targetY}
+                                to: {x: newX, y: newY}
                             }];
     
-                            if (this._gameBoard.checkPushWillMatch(moveResult) === 1) {
+                            // 如果这个移动会产生匹配，立即返回
+                            if (this._gameBoard.checkPushWillMatch(moveResult) === 2) {
                                 return {
                                     from: {x: x, y: y},
-                                    to: {x: x, y: targetY}
-                                };
-                            }
-                        }
-                    }
-                }
-    
-                // 检查向下推动的可能性
-                if (y < this._gameBoard.boardParams.rows - 1) {
-                    // 收集下方所有空格的位置
-                    let emptyPositions: number[] = [];
-                    let consecutiveEmptyCount = 0;
-                    for (let checkY = y + 1; checkY < this._gameBoard.boardParams.rows; checkY++) {
-                        if (this._gameBoard.gems[checkY][x] === 0) {
-                            consecutiveEmptyCount++;
-                            emptyPositions.push(checkY);
-                        } else {
-                            break;  // 遇到非空格就停止
-                        }
-                    }
-    
-                    // 尝试推到每一个空格位置
-                    for (let i = 0; i < emptyPositions.length; i++) {
-                        const targetY = emptyPositions[i];
-                        // 计算这次推动需要多少个空格
-                        const gemsBelowTarget = targetY - y - 1; // 目标位置到当前宝石之间的宝石数
-                        const requiredEmptySpaces = gemsBelowTarget + 1; // 需要的空格数（包括目标位置）
-                        
-                        // 检查是否有足够的空格
-                        if (consecutiveEmptyCount >= requiredEmptySpaces) {
-                            const moveResult = [{
-                                from: {x: x, y: y},
-                                to: {x: x, y: targetY}
-                            }];
-    
-                            if (this._gameBoard.checkPushWillMatch(moveResult) === 1) {
-                                return {
-                                    from: {x: x, y: y},
-                                    to: {x: x, y: targetY}
+                                    to: {x: newX, y: newY}
                                 };
                             }
                         }
@@ -245,6 +130,229 @@ export class HelperManager extends Component {
     
         return null;
     }
+    // public checkTips(): {from: {x: number, y: number}, to: {x: number, y: number}} | null {
+    //     // 检查水平方向的直接消除
+    //     for (let y = 0; y < this._gameBoard.boardParams.rows; y++) {
+    //         let sameTypes: number[] = [];
+    //         let positions: number[] = [];
+            
+    //         // 收集非空格的宝石（水平方向）
+    //         for (let x = 0; x < this._gameBoard.boardParams.columns; x++) {
+    //             const gemType = this._gameBoard.gems[y][x];
+    //             if (gemType !== 0) {
+    //                 sameTypes.push(gemType);
+    //                 positions.push(x);
+    //             }
+    //         }
+            
+    //         // 检查是否有三个相同的
+    //         for (let i = 0; i < sameTypes.length - 2; i++) {
+    //             if (sameTypes[i] === sameTypes[i + 1] && sameTypes[i] === sameTypes[i + 2]) {
+    //                 // 返回中间位置用于点击
+    //                 return {
+    //                     from: {x: positions[i + 1], y: y},
+    //                     to: {x: positions[i + 1], y: y}
+    //                 };
+    //             }
+    //         }
+    //     }
+    
+    //     // 检查垂直方向的直接消除
+    //     for (let x = 0; x < this._gameBoard.boardParams.columns; x++) {
+    //         let sameTypes: number[] = [];
+    //         let positions: number[] = [];
+            
+    //         // 收集非空格的宝石（垂直方向）
+    //         for (let y = 0; y < this._gameBoard.boardParams.rows; y++) {
+    //             const gemType = this._gameBoard.gems[y][x];
+    //             if (gemType !== 0) {
+    //                 sameTypes.push(gemType);
+    //                 positions.push(y);
+    //             }
+    //         }
+            
+    //         // 检查是否有三个相同的
+    //         for (let i = 0; i < sameTypes.length - 2; i++) {
+    //             if (sameTypes[i] === sameTypes[i + 1] && sameTypes[i] === sameTypes[i + 2]) {
+    //                 // 返回中间位置用于点击
+    //                 return {
+    //                     from: {x: x, y: positions[i + 1]},
+    //                     to: {x: x, y: positions[i + 1]}
+    //                 };
+    //             }
+    //         }
+    //     }
+    
+    //     // 检查水平方向的推动
+    //     for (let y = 0; y < this._gameBoard.boardParams.rows; y++) {
+    //         for (let x = 0; x < this._gameBoard.boardParams.columns; x++) {
+    //             const currentGem = this._gameBoard.gems[y][x];
+    //             if (currentGem === 0) continue;
+    
+    //             // 检查向右推动的可能性
+    //             if (x < this._gameBoard.boardParams.columns - 1) {
+    //                 // 收集右边所有空格的位置
+    //                 let emptyPositions: number[] = [];
+    //                 let consecutiveEmptyCount = 0;
+    //                 for (let checkX = x + 1; checkX < this._gameBoard.boardParams.columns; checkX++) {
+    //                     if (this._gameBoard.gems[y][checkX] === 0) {
+    //                         consecutiveEmptyCount++;
+    //                         emptyPositions.push(checkX);
+    //                     } else {
+    //                         break;  // 遇到非空格就停止
+    //                     }
+    //                 }
+    
+    //                 // 尝试推到每一个空格位置
+    //                 for (let i = 0; i < emptyPositions.length; i++) {
+    //                     const targetX = emptyPositions[i];
+    //                     // 计算这次推动需要多少个空格
+    //                     const gemsBeforeTarget = targetX - x - 1; // 目标位置到当前宝石之间的宝石数
+    //                     const requiredEmptySpaces = gemsBeforeTarget + 1; // 需要的空格数（包括目标位置）
+                        
+    //                     // 检查是否有足够的空格
+    //                     if (consecutiveEmptyCount >= requiredEmptySpaces) {
+    //                         const moveResult = [{
+    //                             from: {x: x, y: y},
+    //                             to: {x: targetX, y: y}
+    //                         }];
+    
+    //                         if (this._gameBoard.checkPushWillMatch(moveResult) === 1) {
+    //                             return {
+    //                                 from: {x: x, y: y},
+    //                                 to: {x: targetX, y: y}
+    //                             };
+    //                         }
+    //                     }
+    //                 }
+    //             }
+    
+    //             // 检查向左推动的可能性
+    //             if (x > 0) {
+    //                 // 收集左边所有空格的位置
+    //                 let emptyPositions: number[] = [];
+    //                 let consecutiveEmptyCount = 0;
+    //                 for (let checkX = x - 1; checkX >= 0; checkX--) {
+    //                     if (this._gameBoard.gems[y][checkX] === 0) {
+    //                         consecutiveEmptyCount++;
+    //                         emptyPositions.push(checkX);
+    //                     } else {
+    //                         break;  // 遇到非空格就停止
+    //                     }
+    //                 }
+    
+    //                 // 尝试推到每一个空格位置
+    //                 for (let i = 0; i < emptyPositions.length; i++) {
+    //                     const targetX = emptyPositions[i];
+    //                     // 计算这次推动需要多少个空格
+    //                     const gemsBeforeTarget = x - targetX - 1; // 目标位置到当前宝石之间的宝石数
+    //                     const requiredEmptySpaces = gemsBeforeTarget + 1; // 需要的空格数（包括目标位置）
+                        
+    //                     // 检查是否有足够的空格
+    //                     if (consecutiveEmptyCount >= requiredEmptySpaces) {
+    //                         const moveResult = [{
+    //                             from: {x: x, y: y},
+    //                             to: {x: targetX, y: y}
+    //                         }];
+    
+    //                         if (this._gameBoard.checkPushWillMatch(moveResult) === 1) {
+    //                             return {
+    //                                 from: {x: x, y: y},
+    //                                 to: {x: targetX, y: y}
+    //                             };
+    //                         }
+    //                     }
+    //                 }
+    //             }
+    //         }
+    //     }
+    
+    //     // 检查垂直方向的推动
+    //     for (let y = 0; y < this._gameBoard.boardParams.rows; y++) {
+    //         for (let x = 0; x < this._gameBoard.boardParams.columns; x++) {
+    //             const currentGem = this._gameBoard.gems[y][x];
+    //             if (currentGem === 0) continue;
+    
+    //             // 检查向上推动的可能性
+    //             if (y > 0) {
+    //                 // 收集上方所有空格的位置
+    //                 let emptyPositions: number[] = [];
+    //                 let consecutiveEmptyCount = 0;
+    //                 for (let checkY = y - 1; checkY >= 0; checkY--) {
+    //                     if (this._gameBoard.gems[checkY][x] === 0) {
+    //                         consecutiveEmptyCount++;
+    //                         emptyPositions.push(checkY);
+    //                     } else {
+    //                         break;  // 遇到非空格就停止
+    //                     }
+    //                 }
+    
+    //                 // 尝试推到每一个空格位置
+    //                 for (let i = 0; i < emptyPositions.length; i++) {
+    //                     const targetY = emptyPositions[i];
+    //                     // 计算这次推动需要多少个空格
+    //                     const gemsAboveTarget = y - targetY - 1; // 目标位置到当前宝石之间的宝石数
+    //                     const requiredEmptySpaces = gemsAboveTarget + 1; // 需要的空格数（包括目标位置）
+                        
+    //                     // 检查是否有足够的空格
+    //                     if (consecutiveEmptyCount >= requiredEmptySpaces) {
+    //                         const moveResult = [{
+    //                             from: {x: x, y: y},
+    //                             to: {x: x, y: targetY}
+    //                         }];
+    
+    //                         if (this._gameBoard.checkPushWillMatch(moveResult) === 1) {
+    //                             return {
+    //                                 from: {x: x, y: y},
+    //                                 to: {x: x, y: targetY}
+    //                             };
+    //                         }
+    //                     }
+    //                 }
+    //             }
+    
+    //             // 检查向下推动的可能性
+    //             if (y < this._gameBoard.boardParams.rows - 1) {
+    //                 // 收集下方所有空格的位置
+    //                 let emptyPositions: number[] = [];
+    //                 let consecutiveEmptyCount = 0;
+    //                 for (let checkY = y + 1; checkY < this._gameBoard.boardParams.rows; checkY++) {
+    //                     if (this._gameBoard.gems[checkY][x] === 0) {
+    //                         consecutiveEmptyCount++;
+    //                         emptyPositions.push(checkY);
+    //                     } else {
+    //                         break;  // 遇到非空格就停止
+    //                     }
+    //                 }
+    
+    //                 // 尝试推到每一个空格位置
+    //                 for (let i = 0; i < emptyPositions.length; i++) {
+    //                     const targetY = emptyPositions[i];
+    //                     // 计算这次推动需要多少个空格
+    //                     const gemsBelowTarget = targetY - y - 1; // 目标位置到当前宝石之间的宝石数
+    //                     const requiredEmptySpaces = gemsBelowTarget + 1; // 需要的空格数（包括目标位置）
+                        
+    //                     // 检查是否有足够的空格
+    //                     if (consecutiveEmptyCount >= requiredEmptySpaces) {
+    //                         const moveResult = [{
+    //                             from: {x: x, y: y},
+    //                             to: {x: x, y: targetY}
+    //                         }];
+    
+    //                         if (this._gameBoard.checkPushWillMatch(moveResult) === 1) {
+    //                             return {
+    //                                 from: {x: x, y: y},
+    //                                 to: {x: x, y: targetY}
+    //                             };
+    //                         }
+    //                     }
+    //                 }
+    //             }
+    //         }
+    //     }
+    
+    //     return null;
+    // }
 
 public showTips() {
     if (this.fingerNode.active || this.fingerNode2.active) {
@@ -387,6 +495,13 @@ private setPositionAndAnimate(from: {x: number, y: number}, to: {x: number, y: n
             .repeatForever()
             .start();
     }
+}
+public showClickHint(x: number, y: number) {
+    const position = {x, y};
+    this.setPositionAndAnimate(position, position);
+}
+public hideClickHint() {
+    this.hideTips();
 }
 
 

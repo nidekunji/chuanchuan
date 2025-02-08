@@ -2,7 +2,7 @@
  * @Author: Aina
  * @Date: 2025-01-10 04:25:09
  * @LastEditors: Aina
- * @LastEditTime: 2025-01-19 14:33:21
+ * @LastEditTime: 2025-02-07 16:35:29
  * @FilePath: /chuanchuan/assets/game/scripts/CustomerMove.ts
  * @Description: 
  * 
@@ -103,7 +103,11 @@ export class CustomerMove extends Component {
         let previousPosition = this.node.position.clone(); // 保存初始位置
         waypoints.forEach((waypoint, index) => {
             let duration = Vec3.distance(previousPosition, waypoint) /  speed;
-            let scaleDirection = this.calculateScaleDirection(previousPosition, waypoint); // 提前计算朝向
+            // let scaleDirection = this.calculateScaleDirection(previousPosition, waypoint); // 提前计算朝向
+            let scaleDirection = index === waypoints.length - 1 
+            ? new Vec3(1, 1, 1) 
+            : this.calculateScaleDirection(previousPosition, waypoint);
+            
             sequence = sequence
             .to(0, { scale: scaleDirection }) // Set scale instantly
             .to(duration, { position: waypoint }, { easing: 'linear' }) // Move to waypoint

@@ -271,9 +271,9 @@ export class TouchMgr extends Component {
         // 使用实际触摸的宝石位置，而不是数组中的第一个
         const touchedGemPos = this.targetGridPosition; // 使用实际触摸的位置
         const touchedGem = this.gameBoard.board[touchedGemPos.y][touchedGemPos.x];
-        console.log('touchedGem', touchedGem, touchedGemPos);
+      //  console.log('touchedGem', touchedGem, touchedGemPos);
         this.maxEmptySlots = this.gameBoard.countEmptySlots(pushableGems, direction);
-        console.log('this.maxEmptySlots', this.maxEmptySlots);
+      //  console.log('this.maxEmptySlots', this.maxEmptySlots);
         // 设置 dragNode 的初始位置为实际触摸的宝石位置
         const worldPos = new Vec3();
         touchedGem.getWorldPosition(worldPos);
@@ -282,7 +282,7 @@ export class TouchMgr extends Component {
         this.dragNode.setPosition(this.dragStartPos);
         this.dragNode.active = true;
         
-        console.log('pushableGems', pushableGems);
+        // console.log('pushableGems', pushableGems);
         // 创建拖动宝石，注意相对位置的计算也要基于触摸点
         pushableGems.forEach(pos => {
             const originalGem = this.gameBoard.board[pos.y][pos.x];
@@ -291,8 +291,6 @@ export class TouchMgr extends Component {
             // 计算相对于触摸宝石的偏移
             const offsetX = (pos.x - touchedGemPos.x) * (this.gameBoard.boardParams.gemWidth + this.gameBoard.boardParams.spacing);
             const offsetY = (touchedGemPos.y - pos.y) * (this.gameBoard.boardParams.gemHeight + this.gameBoard.boardParams.spacing);
-        
-            console.log('offsetY', offsetY, direction.dy);
             dragGem.setPosition(new Vec3(offsetX, offsetY, 0));
             
             const opacity = dragGem.getComponent(UIOpacity) || dragGem.addComponent(UIOpacity);
@@ -303,6 +301,15 @@ export class TouchMgr extends Component {
             
             this.dragNode.addChild(dragGem);
             this.dragGems.push(originalGem);
+        });
+    }
+    private restoreGemsOpacity() {
+        this.dragNode.active = false;
+        this.dragGems.forEach(gem => {
+            if (gem.isValid) {  // Check if node is still valid
+                const opacity = gem.getComponent(UIOpacity);
+                if (opacity) opacity.opacity = 255;
+            }
         });
     }
     
@@ -418,40 +425,21 @@ export class TouchMgr extends Component {
                         case 1:
                             console.log('形成三消，执行消除...');
                             // 恢复原始宝石可见性
-                            this.dragGems.forEach(gem => {
-                                const opacity = gem.getComponent(UIOpacity);
-                                if (opacity) opacity.opacity = 255;
-                            });
-                            this.dragNode.active = false;
+                            this.restoreGemsOpacity();
                             // 更新棋盘数据并触发消除逻辑
-                        this.gameBoard.currentState = GameState.Processing;
+                            this.gameBoard.currentState = GameState.Processing;
                          // 触发消除逻辑
-                          await this.gameBoard.handlePushAndMatch(moveResult, true);
+                            await this.gameBoard.handlePushAndMatch(moveResult, true);
                             break;
                         case 2:
                             console.log('形成两个相邻宝石，执行移动...');
+                            // 恢复原始宝石可见性
+                            this.restoreGemsOpacity();
+                            // 更新棋盘数据并触发移动逻辑
                             this.gameBoard.currentState = GameState.Processing;
                             await this.gameBoard.handlePushAndMatch(moveResult, false);
                             break;
                     }
-                    // if (willMatch) {
-                    //     console.log('形成三消，执行消除...');
-                    //     // 恢复原始宝石可见性
-                    //     this.dragGems.forEach(gem => {
-                    //         const opacity = gem.getComponent(UIOpacity);
-                    //         if (opacity) opacity.opacity = 255;
-                    //     });
-                    //     this.dragNode.active = false;
-    
-                    //     // 更新棋盘数据并触发消除逻辑
-                    //     this.gameBoard.currentState = GameState.Processing;
-    
-                    //     // 触发消除逻辑
-                    //     await this.gameBoard.handlePushAndMatch(moveResult);
-                    // } else {
-                    //     console.log('不会产生三消，返回原位');
-                    //     await this.animateBackToStart();
-                    // }
                 } else {
                     console.log('移动距离不足，返回原位');
                     await this.animateBackToStart();
@@ -462,13 +450,7 @@ export class TouchMgr extends Component {
             } finally {
                 // 确保在所有情况下都恢复宝石可见性
                 // 确保在所有情况下都安全地恢复宝石可见性
-                this.dragGems.forEach(gem => {
-                    if (gem.isValid) {  // 检查节点是否仍然有效
-                        const opacity = gem.getComponent(UIOpacity);
-                        if (opacity) opacity.opacity = 255;
-                    }
-                });
-                this.dragNode.active = false;
+                this.restoreGemsOpacity();
                 this.gameBoard.currentState = GameState.Idle;
             }
         } else {

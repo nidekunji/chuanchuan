@@ -2,7 +2,7 @@
  * @Author: Aina
  * @Date: 2025-01-10 04:54:34
  * @LastEditors: Aina
- * @LastEditTime: 2025-01-25 11:38:46
+ * @LastEditTime: 2025-02-07 18:20:57
  * @FilePath: /chuanchuan/assets/game/scripts/CustomerComponent.ts
  * @Description: 
  * 
@@ -14,6 +14,8 @@ import { FrameAnimation } from '../../common/scripts/FrameAnimation';
 import { CustomerMove } from './CustomerMove';
 import { ResourceManager } from '../../common/scripts/ResourceManager';
 import { CustomerState } from '../../core/scripts/define/Enums';
+import { LocalStorageManager } from '../../common/scripts/LocalStorageManager';
+import { LocalCacheKeys } from '../../app/config/GameConfig';
 const { ccclass, property } = _decorator;
 
 const waitingPositions = {
@@ -86,8 +88,20 @@ export class CustomerComponent extends Component {
         this.tableId = tableId;
         this.isWaiting = isWaiting;
         this.node.active = false;
+        let skinType = [1]
+        let level = LocalStorageManager.getItem(LocalCacheKeys.Level)
+        if (!level || level === '1') {
+            
+        } else {
+           let newLevel = Number(level)
+           if (newLevel >= 5 && newLevel <= 10) {
+            skinType = [1,2]
+           }  else if (newLevel >= 11) {
+            skinType = [1,2,3]
+           }
+        }
         if (this.frameAnimation) {
-            this.frameAnimation.init(this.customerType);
+            this.frameAnimation.init(skinType);
         }
         if (isWaiting) {
             this.node.setPosition(waitingPositions[tableId]);

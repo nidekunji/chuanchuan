@@ -41,7 +41,7 @@ export class CustomerManager extends Component {
     private nodePool: NodePool; // 对象池
 
     private readonly TOTAL_SLOTS = 6;        // 总格子数
-    private readonly INITIAL_UNLOCKED = 3;   // 初始解锁数
+    private readonly INITIAL_WAITING_COUNT = 3;   // 初始解锁数
     
     // 存放区数据：固定6个位置的数组
     private storageSlots: StorageSlot[] = [];
@@ -58,7 +58,7 @@ export class CustomerManager extends Component {
                 this.recycleCustomer(customer.node);
             }
         }
-        this.waiting = {1: null, 2: null, 3: null, 4: null, 5: null, 6: null};
+        this.waiting = {1: null, 2: null, 3: null};
 
         // 2. 清理排队区的顾客
         for (const customer of this.queue) {
@@ -179,24 +179,25 @@ export class CustomerManager extends Component {
             // 如果没有缓存数据，按原来的逻辑初始化等待区
             let waitingCount = 0;
             Object.keys(this.customersToServeByType).forEach(key => {
-                if (waitingCount < 6) {
+                if (waitingCount < this.INITIAL_WAITING_COUNT) {
                     waitingCount++;
                     this.createCustomer(true, parseInt(key), waitingCount);
                 }
             });
         }
     
-        // 初始化排队区（保持不变）
-        let totalCount = 0;
-        let queueCount = 0;
-        Object.keys(this.customersToServeByType).forEach(key => {
-            const customerType = parseInt(key);
-            totalCount += this.customersToServeByType[customerType];
-            if (totalCount > 9 && queueCount < 3) {
-                queueCount++;
-                this.createCustomer(false, customerType, queueCount);
-            }
-        });
+         // 初始化排队区 - 只有当等待区满了才创建排队区顾客
+        const waitingAreaFull = Object.keys(this.waiting).every(([_, customer]) => customer !== null);
+        if (waitingAreaFull) {
+            let queueCount = 0;
+            Object.keys(this.customersToServeByType).forEach(key => {
+                const customerType = parseInt(key);
+                if (this.customersToServeByType[customerType] > 0 && queueCount < 3) {
+                    queueCount++;
+                    this.createCustomer(false, customerType, queueCount);
+                }
+            });
+        }
     }
     /**
      * 更新顾客类型计数

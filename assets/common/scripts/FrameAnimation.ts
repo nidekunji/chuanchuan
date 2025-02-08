@@ -2,7 +2,7 @@
  * @Author: Aina
  * @Date: 2025-01-03 21:37:19
  * @LastEditors: Aina
- * @LastEditTime: 2025-01-22 22:48:02
+ * @LastEditTime: 2025-02-07 17:07:43
  * @FilePath: /chuanchuan/assets/common/scripts/FrameAnimation.ts
  * @Description: 
  * 
@@ -30,20 +30,24 @@ export class FrameAnimation extends Component {
     onLoad() {
         this.sprite = this.getComponent(Sprite)!;
     }
-    init(type: number, frameRate: number = 1, scaleX: number = 1) {
+    init(types: number[], frameRate: number = 1, scaleX: number = 1) {
         if (frameRate !== undefined) {
             this._frameRate = frameRate;
         }
-        this.customerId = type;
-       
-        this.startFrameId = (type - 1) * 2;
+      //  this.customerId = type;
+        // 
+        const randomIndex = Math.floor(Math.random() * types.length);
+        const selectedType = types[randomIndex];
+        
+        this.startFrameId = (selectedType - 1) * 2;
+        this.endFrameId = this.startFrameId + 1;
         this.endFrameId = this.startFrameId + 1;
         let node = this.node; // 获取当前组件所在的节点
         if (node) {
             node.setScale(new Vec3(scaleX, 1, 1)); // 设置节点的缩放
         }
         if (this.endFrameId >= this.frames.length) {
-            console.warn(`Type ${type} results in endFrameId ${this.endFrameId} which is out of bounds. Adjusting to last valid index.`);
+         //   console.warn(`Type ${type} results in endFrameId ${this.endFrameId} which is out of bounds. Adjusting to last valid index.`);
             this.endFrameId = this.frames.length - 1;
         }
     }

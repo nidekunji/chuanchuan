@@ -1088,7 +1088,7 @@
     "__prefab": null,
     "_contentSize": {
       "__type__": "cc.Size",
-      "width": 43.95997619628906,
+      "width": 46.59375,
       "height": 35.28
     },
     "_anchorPoint": {
@@ -1128,7 +1128,7 @@
     "_overflow": 0,
     "_enableWrapText": true,
     "_font": {
-      "__uuid__": "2e7855a9-cce9-4dba-8343-e2c69de52ae4",
+      "__uuid__": "7aef4a90-8ab5-4dd9-9225-576fc995b426",
       "__expectedType__": "cc.TTFFont"
     },
     "_isSystemFontUsed": false,
@@ -1261,7 +1261,7 @@
     "__prefab": null,
     "_contentSize": {
       "__type__": "cc.Size",
-      "width": 134.17599487304688,
+      "width": 139.890625,
       "height": 35.28
     },
     "_anchorPoint": {
@@ -1301,7 +1301,7 @@
     "_overflow": 0,
     "_enableWrapText": true,
     "_font": {
-      "__uuid__": "2e7855a9-cce9-4dba-8343-e2c69de52ae4",
+      "__uuid__": "7aef4a90-8ab5-4dd9-9225-576fc995b426",
       "__expectedType__": "cc.TTFFont"
     },
     "_isSystemFontUsed": false,
