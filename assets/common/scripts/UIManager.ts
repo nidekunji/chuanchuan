@@ -218,7 +218,7 @@ export class UIManager extends Component {
             case 1: // 缩放动画
                 uiNode.scale = new Vec3(0.1, 0.1, 1);
                 tween(uiNode)
-                    .to(0.3, { scale: new Vec3(1, 1, 1) })
+                    .to(0.1, { scale: new Vec3(1, 1, 1) })
                     .call(() => onComplete && onComplete()) 
                     .start();
                 break;
@@ -226,7 +226,8 @@ export class UIManager extends Component {
                 const uiOpacity = uiNode.getComponent(UIOpacity) || uiNode.addComponent(UIOpacity);
                 uiOpacity.opacity = 0;
                 tween(uiOpacity)
-                    .to(0.3, { opacity: 255 })
+                    .to(1, { opacity: 255 })
+                    .delay(0.5)
                     .call(() => onComplete && onComplete()) 
                     .start();
                 break;

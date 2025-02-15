@@ -126,6 +126,7 @@ export class AudioManager extends Component {
         this.soundEffectsSource.volume = enabled ? 1 : 0;
     }
     public playButtonClick() {
+        console.log("playButtonClick", !this.soundEffectsSource, !this.isSoundEffectsEnabled())
         if (!this.soundEffectsSource || !this.isSoundEffectsEnabled()) return;
         console.log("playButtonClick")
         this.playSoundEffect('click');

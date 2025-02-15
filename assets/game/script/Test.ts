@@ -1,9 +1,9 @@
-import { _decorator, Component, Node, Prefab, instantiate, Vec3, UITransform, tween, Size, Label, Tween, SpriteFrame, Sprite, director, ParticleSystem, dragonBones, Animation, Color } from 'cc';
+import { _decorator, Component, Node, Prefab, instantiate, Vec3, UITransform, tween, Size, Label, Tween, SpriteFrame, Sprite, director, ParticleSystem, dragonBones, Animation, Color, UIOpacity } from 'cc';
 import { Gem } from './Gem';
 import { IBoardParams, IGemData, StorageSlot } from '../../core/scripts/define/Types';
 import { Vector2 } from './Vector2';
 import { TouchMgr } from '../scripts/TouchMgr';
-import { BoardInitialConfig, LocalCacheKeys, NewUserBoardConfig, NewUserGameConfig, NormalGameConfig, uiLoadingConfigs } from '../../app/config/GameConfig';
+import { BoardInitialConfig, levelConfig, LocalCacheKeys, NewUserBoardConfig, NewUserGameConfig, NormalGameConfig, uiLoadingConfigs } from '../../app/config/GameConfig';
 import { LocalStorageManager } from '../../common/scripts/LocalStorageManager';
 import { UIManager } from '../../common/scripts/UIManager';
 import { EventDispatcher } from '../../common/scripts/EventDispatcher';
@@ -101,7 +101,6 @@ export class GameBoard extends Component {
     private moves: number = 0;
     // 使用一个变量来存储当前的游戏状态
     public currentState: GameState = GameState.Idle;
-    private isScheduled: boolean = false;
     public gemGroupCountMap: { [key: number]: number } = {};
     public boardParams: IBoardParams;
     public touchMgr: TouchMgr;
@@ -137,8 +136,7 @@ export class GameBoard extends Component {
         this.scheduleOnce(() => {
             if (!this.loadGame()) {
                 this.initBoard();
-            }
-            this.customerManager.init(this, this.gemGroupCountMap, this.nodePool);
+            } 
         }, 0);
     }
     initManager() {
@@ -189,14 +187,19 @@ export class GameBoard extends Component {
     initConfig() {
       //  LocalStorageManager.clearAllCache();
         let level = LocalStorageManager.getItem(LocalCacheKeys.Level)
-        if (!level || level === '1') {
+        if (!level) {
+            this._level = 1;
+        } else {
+            this._level = Number(level);
+        }
+        if (this._level === 1) {
             LocalStorageManager.removeItem(LocalCacheKeys.GameSave);
-            this.updateLevel(1);
+            this.updateLevel(this._level);
             this.boardParams = NewUserBoardConfig;
-            LocalStorageManager.setItem(LocalCacheKeys.Level, '1');
+            LocalStorageManager.setItem(LocalCacheKeys.Level, this._level.toString());
             
         } else {
-            this.updateLevel(Number(level));
+            this.updateLevel(this._level);
             this.boardParams = BoardInitialConfig;
         }
         this.score = 0;
@@ -383,28 +386,156 @@ export class GameBoard extends Component {
         gem.setPosition(new Vec3(localX, localY, 0));
         gem.active = true;
         if (!this.board[row]) this.board[row] = [];
-        if (!this.gems[row]) this.gems[row] = [];
         this.board[row][col] = gem;
-        this.gems[row][col] = type;
         return gem;
     }
-    private initBoard() {
-        // 填充棋盘
-        const filledBoard = this.fillBoard();
-        // 创建宝石
-        for (let i = 0; i < this.boardParams.rows; i++) {
-            for (let j = 0; j < this.boardParams.columns; j++) {
-                const gemType = filledBoard[i][j];
-                this.createGem(i, j, gemType);
-            }
+    private async initBoard() {
+        // 填充棋盘数据
+        let filledBoard: any;
+        if (this._level === 1) {
+            filledBoard = levelConfig[this._level];
+        } else {
+            filledBoard = this.fillBoard();
         }
-        // 验证宝石数量
+        this.gems = filledBoard;
         this.validateGemCounts();
-        this.printBoardState();
+        this.customerManager.init(this, this.gemGroupCountMap, this.nodePool);
+        
+        // 设置当前状态为动画中
+        this.currentState = GameState.Animating;
+        
+        try {
+            const middleRow = Math.floor(this.boardParams.rows / 2);
+            // 同时生成顶部和底部
+            for (let offset = 0; offset < middleRow; offset++) {
+                // 顶部行和底部行
+                const topRow = offset;
+                const bottomRow = this.boardParams.rows - 1 - offset;
+                
+                if (offset % 2 === 0) {
+                    // 从右到左(顶部)和从左到右(底部)同时生成
+                    for (let i = 0; i < this.boardParams.columns; i++) {
+                        const promises = [];
+                        // 顶部：从右到左
+                        const topCol = this.boardParams.columns - 1 - i;
+                        promises.push(this.createGemWithAnimation(topRow, topCol, filledBoard[topRow][topCol]));
+                        
+                        // 底部：从左到右
+                        const bottomCol = i;
+                        promises.push(this.createGemWithAnimation(bottomRow, bottomCol, filledBoard[bottomRow][bottomCol]));
+                        
+                        // 等待当前两个宝石都生成完成
+                        await Promise.all(promises);
+                    }
+                } else {
+                    // 从左到右(顶部)和从右到左(底部)同时生成
+                    for (let i = 0; i < this.boardParams.columns; i++) {
+                        const promises = [];
+                        // 顶部：从左到右
+                        const topCol = i;
+                        promises.push(this.createGemWithAnimation(topRow, topCol, filledBoard[topRow][topCol]));
+                        
+                        // 底部：从右到左
+                        const bottomCol = this.boardParams.columns - 1 - i;
+                        promises.push(this.createGemWithAnimation(bottomRow, bottomCol, filledBoard[bottomRow][bottomCol]));
+                        
+                        // 等待当前两个宝石都生成完成
+                        await Promise.all(promises);
+                    }
+                }
+            }
+    
+            // 如果有中间行(奇数行的情况)，单独处理
+            if (this.boardParams.rows % 2 !== 0) {
+                // 中间行从右到左生成
+                for (let col = this.boardParams.columns - 1; col >= 0; col--) {
+                    await this.createGemWithAnimation(middleRow, col, filledBoard[middleRow][col]);
+                }
+            }
+           
+         //   this.customerManager.init(this, this.gemGroupCountMap, this.nodePool);
+            UIManager.instance.openUI(uiLoadingConfigs.LayerUIUrl, ()=>{
+                UIManager.instance.closeUI(uiLoadingConfigs.LayerUIUrl.name, 0)
+            }, 2);
+        } finally {
+            // 恢复状态为空闲
+            this.openNewGuide()
+            this.currentState = GameState.Idle;
+        }
+    }
+    private async createGemWithAnimation(row: number, col: number, type: number): Promise<void> {
+        const gem = this.createGem(row, col, type);
+        if (!gem) return;
+        if (type === 0) return;
+        
+        // 确保有 UIOpacity 组件
+        let uiOpacity = gem.getComponent(UIOpacity);
+        if (!uiOpacity) {
+            uiOpacity = gem.addComponent(UIOpacity);
+        }
+        
+        // 获取Item子节点的Sprite组件
+        const itemSprite = gem.getChildByName('Item')?.getComponent(Sprite);
+        if (!itemSprite) return;
+        
+        // 初始状态设置
+        gem.scale = new Vec3(0, 0, 0);
+        uiOpacity.opacity = 255; // 设置为完全不透明
+        itemSprite.color = new Color(0, 0, 0, 255); // 初始颜色设为黑色
+        
+        const originalPos = gem.position.clone();
+        gem.setPosition(new Vec3(
+            originalPos.x,
+            originalPos.y + 100,
+            originalPos.z
+        ));
+
+        return new Promise<void>((resolve) => {
+            // 同时开始所有动画
+            Promise.all([
+                new Promise<void>(tweenResolve => {
+                    tween(gem)
+                        .parallel(
+                            tween().to(0.03, { 
+                                scale: new Vec3(
+                                    this.boardParams.scaleFactor, 
+                                    this.boardParams.scaleFactor, 
+                                    1
+                                )
+                            }, {
+                                easing: 'backOut'
+                            }),
+                            tween().to(0.03, { 
+                                position: originalPos 
+                            }, {
+                                easing: 'quadOut'
+                            })
+                        )
+                        .call(() => tweenResolve())
+                        .start();
+                }),
+                new Promise<void>(tweenResolve => {
+                    // 颜色渐变动画
+                    tween(itemSprite)
+                        .to(0.03, { 
+                            color: new Color(255, 255, 255, 255) 
+                        }, {
+                            easing: 'quadOut'
+                        })
+                        .call(() => tweenResolve())
+                        .start();
+                })
+            ]).then(() => resolve());
+
+            // 音效
+            // this.scheduleOnce(() => {
+            //     AudioManager.instance.playSoundEffect('pop');
+            // }, 0.033);
+        });
     }
     findAllValidMatchSetups(board: number[][], rows: number, columns: number): {r: number, c: number}[][] {
         let allMatches = [];
-    
+
         for (let r = 0; r < rows; r++) {
             for (let c = 0; c < columns; c++) {
                 if (board[r][c] === 0) { // Check if the current position is empty
@@ -412,7 +543,7 @@ export class GameBoard extends Component {
                     if (c <= columns - 3 && [0, 1, 2].every(i => board[r][c + i] === 0)) {
                         allMatches.push([{ r, c }, { r, c: c + 1 }, { r, c: c + 2 }]);
                     }
-    
+
                     // Check vertical possibility
                     if (r <= rows - 3 && [0, 1, 2].every(i => board[r + i][c] === 0)) {
                         allMatches.push([{ r, c }, { r: r + 1, c }, { r: r + 2, c }]);
@@ -420,7 +551,7 @@ export class GameBoard extends Component {
                 }
             }
         }
-    
+
         return allMatches; // Return all found match setups
     }
     private fillBoard() {
@@ -554,7 +685,7 @@ export class GameBoard extends Component {
             }
         }
     
-       //console.log(board, 'Final board setup');
+        console.log(board, 'Final board setup');
         return board;
     }
     private hasPossibleMatch(board: number[][]): boolean {
@@ -645,16 +776,16 @@ export class GameBoard extends Component {
         for (let type = 1; type <= this.boardParams.gemTypes; type++) {
             this.gemGroupCountMap[type] = Math.floor(gemCounts[type] / 3);
         }
-        // 输出统计结果
-      //  console.log("=== Gem Distribution Validation ===");
-        // for (let type = 1; type <= this.boardParams.gemTypes; type++) {
-        //     const count = gemCounts[type];
-        //     console.log(`Type ${type}: ${count} gems (${count / 3} groups of 3)`);
+    //     // 输出统计结果
+    //    console.log("=== Gem Distribution Validation ===");
+    //     for (let type = 1; type <= this.boardParams.gemTypes; type++) {
+    //         const count = gemCounts[type];
+    //         console.log(`Type ${type}: ${count} gems (${count / 3} groups of 3)`);
 
-        //     if (count % 3 !== 0) {
-        //         console.error(`Error: Gem type ${type} count (${count}) is not divisible by 3!`);
-        //     }
-        // }
+    //         if (count % 3 !== 0) {
+    //             console.error(`Error: Gem type ${type} count (${count}) is not divisible by 3!`);
+    //         }
+    //     }
     }
  
    /**
@@ -692,6 +823,10 @@ export class GameBoard extends Component {
 
     return true;
 }
+private openNewGuide() {
+    if (this._level == 1)
+    this.helperManager.showTips();
+}
 public async handlePushAndMatch(moveResult: { from: { x: number, y: number }, to: { x: number, y: number } }[], willMatch: boolean = true): Promise<boolean> {
         try {
             this.currentState = GameState.Processing;
@@ -700,15 +835,15 @@ public async handlePushAndMatch(moveResult: { from: { x: number, y: number }, to
             await this.updateGemsPositions(moveResult);
     
             // 打印移动后的棋盘状态
-            console.log('移动后的棋盘状态:');
-            this.printBoardState();
+            // console.log('移动后的棋盘状态:');
+            // this.printBoardState();
 
             if (willMatch) {
                 // 2. 检查是否有可消除的组合
                 for (const move of moveResult) {
                     const gemType = this.gems[move.to.y][move.to.x];
-                    console.log(`\n检查目标位置 (${move.to.x}, ${move.to.y}) 的匹配`);
-                    console.log(`该位置的宝石类型: ${gemType}`);
+                    // console.log(`\n检查目标位置 (${move.to.x}, ${move.to.y}) 的匹配`);
+                    // console.log(`该位置的宝石类型: ${gemType}`);
         
                     const matchGroup = this.findMatchGroupAtPosition(
                         move.to.x,
@@ -726,7 +861,7 @@ public async handlePushAndMatch(moveResult: { from: { x: number, y: number }, to
                     }
                 }
             } else {
-                console.log('执行移动...')
+                // console.log('执行移动...')
                 return true;
             }
             return false;
@@ -734,6 +869,7 @@ public async handlePushAndMatch(moveResult: { from: { x: number, y: number }, to
             console.error('Error in handlePushAndMatch:', error);
             return false;
         } finally {
+            this.openNewGuide()
             this.currentState = GameState.Idle;
         }
     }
@@ -769,7 +905,11 @@ public async handlePushAndMatch(moveResult: { from: { x: number, y: number }, to
                 if (!this.foodStorageManager.hasAvailableSlot()) {
                     // 3. 如果存放区已满，检查是否有未解锁的存放区
                     if (this.foodStorageManager.hasLockedSlots()) {
-                        this.tipUI.showTips("存放区已满，观看视频解锁新的存放区");
+                        const uiManager = UIManager.instance;
+                        if (uiManager) {
+                         uiManager.openUI(uiLoadingConfigs.CommonVedioUIUrl);
+                        }
+                       // this.tipUI.showTips("存放区已满，观看视频解锁新的存放区");
                     } else {
                         this.tipUI.showTips("存放区已满，请先清理存放区");
                     }
@@ -786,6 +926,7 @@ public async handlePushAndMatch(moveResult: { from: { x: number, y: number }, to
         // 5. 如果正好是3个匹配，执行消除逻辑
         await this.removeMatchGroup(matchGroup);
         } finally {
+            this.openNewGuide()
             this.currentState = GameState.Idle;
         }
     }
@@ -982,14 +1123,12 @@ public countEmptySlots(gems: { x: number, y: number }[], direction: { dx: number
         console.log(`Checking from (${targetGem.x}, ${targetGem.y}) in direction (${direction.dx}, ${direction.dy}), found ${emptyCount} empty slots`);  // 添加调试日志
         return emptyCount;
 }
-    public findMatchGroupAtPosition(x: number, y: number, type: number, requireNumber: number = 3): { x: number, y: number }[] {
+public findMatchGroupAtPosition(x: number, y: number, type: number, requireNumber: number = 3): { x: number, y: number }[] {
         // First check parameter validity
-
+        console.log(x, y, "xy")
         if (!this.isValidPosition(x, y) || this.gems[y][x] === 0 || this.gems[y][x] !== type) {
             return [];
         }
-        
-
         // Check horizontal direction
         const horizontalMatches = this.findMatchesInDirection(x, y, type, true, requireNumber);
         
@@ -1014,6 +1153,7 @@ public countEmptySlots(gems: { x: number, y: number }[], direction: { dx: number
         }
         return allMatches.length >= requireNumber ? allMatches : [];
     }
+
     private findMatchesInDirection(x: number, y: number, type: number, isHorizontal: boolean, requireNumber: number = 3): { x: number, y: number }[] {
         const sameTypePositions: { x: number, y: number }[] = [];
         
@@ -1241,8 +1381,6 @@ public countEmptySlots(gems: { x: number, y: number }[], direction: { dx: number
                     this.resetGame();
                 });
             }
-          //  this.helperManager.showTips();
-
         } catch (error) {
             console.error('Error in removeMatchGroup:', error);
         } finally {
@@ -1315,75 +1453,117 @@ public countEmptySlots(gems: { x: number, y: number }[], direction: { dx: number
      * @returns 1 形成三消 2 形成相邻 0 不形成
      */
     public checkPushWillMatch(moveResult: GemMove[]): number {
-        // 创建一个临时的棋盘状态来模拟移动
         const tempBoard = this.gems.map(row => [...row]);
         
-        // 先记录所有要移动的宝石的类型和位置
+        // 记录移动的宝石信息
         const gemMoves = moveResult.map(move => ({
             ...move,
             type: tempBoard[move.from.y][move.from.x]
         }));
-    
-        if (gemMoves.length === 2) {
-            if (gemMoves[0].type === gemMoves[1].type) {
-                // 检查是否能形成三消
-                for (const move of gemMoves) {
-                    const matchGroup = this.findMatchGroupAtPosition(
-                        move.to.x,
-                        move.to.y,
-                        move.type
-                    );
-                    if (matchGroup.length >= 3) {
-                        return 1; // 只有能形成三消才允许移动
+
+        // 检查移动前是否有相邻的相同类型宝石，并记录这些宝石
+        let preExistingMatchPairs: Array<{
+            type: number,
+            pos1: { x: number, y: number },
+            pos2: { x: number, y: number }
+        }> = [];
+
+        for (const move1 of gemMoves) {
+            for (const move2 of gemMoves) {
+                if (move1 === move2) continue;
+                if (move1.type === move2.type) {
+                    // 检查是否水平或垂直相邻
+                    if ((Math.abs(move1.from.x - move2.from.x) === 1 && move1.from.y === move2.from.y) ||
+                        (Math.abs(move1.from.y - move2.from.y) === 1 && move1.from.x === move2.from.x)) {
+                        // 记录这对相邻宝石
+                        preExistingMatchPairs.push({
+                            type: move1.type,
+                            pos1: move1.from,
+                            pos2: move2.from
+                        });
                     }
                 }
-                return 0; // 两个相同类型的宝石不能只形成相邻
             }
         }
-    
-        // 先清除原始位置
+
+        // 模拟移动
         gemMoves.forEach(move => {
             tempBoard[move.from.y][move.from.x] = null;
         });
-        
-        // 放置到新位置
         gemMoves.forEach(move => {
             tempBoard[move.to.y][move.to.x] = move.type;
         });
-    
-        // 保存原始棋盘状态
+
         const originalGems = this.gems.map(row => [...row]);
-        // 临时替换棋盘状态
         this.gems = tempBoard;
+
         try {
-            // 检查每个移动后位置的匹配情况
+            let hasMatch = false;      // 是否形成三消
+            let hasNewAdjacent = false; // 是否形成真正的新相邻
+
+            // 检查移动后的匹配情况
             for (const move of gemMoves) {
-                // 检查移动后位置是否能形成匹配
+                // 检查是否形成三消
                 const matchGroup = this.findMatchGroupAtPosition(
                     move.to.x,
                     move.to.y,
                     move.type
                 );
                 if (matchGroup.length >= 3) {
-                    return 1; // 返回1表示发生了匹配
+                    hasMatch = true;
+                    break;
                 }
-                const matchGroup2 = this.findMatchGroupAtPosition(
+
+                // 检查相邻关系
+                const adjacentGroup = this.findMatchGroupAtPosition(
                     move.to.x,
                     move.to.y,
                     move.type,
                     2
                 );
-                if (matchGroup2.length >= 2) {
-                    return 2;
+                
+                if (adjacentGroup.length >= 2) {
+                    // 检查这个相邻关系是否是来自原来就相邻的宝石
+                    const isPreExistingPair = preExistingMatchPairs.some(pair => {
+                        return adjacentGroup.some(pos1 => 
+                            adjacentGroup.some(pos2 => {
+                                if (pos1 === pos2) return false;
+                                // 检查这对相邻的宝石是否就是原来那对相邻的宝石
+                                const isSamePair = (
+                                    gemMoves.some(m => m.from.x === pair.pos1.x && m.from.y === pair.pos1.y && 
+                                        m.to.x === pos1.x && m.to.y === pos1.y) &&
+                                    gemMoves.some(m => m.from.x === pair.pos2.x && m.from.y === pair.pos2.y && 
+                                        m.to.x === pos2.x && m.to.y === pos2.y)
+                                );
+                                return isSamePair;
+                            })
+                        );
+                    });
+
+                    if (!isPreExistingPair) {
+                        hasNewAdjacent = true;
+                    }
                 }
             }
-    
-            return 0; // 如果没有找到匹配或相邻，返回0
+
+            // 判定逻辑
+            if (hasMatch) {
+                return 1; // 形成三消，一定是有效移动
+            }
+            
+            if (preExistingMatchPairs.length > 0) {
+                // 如果移动前有相邻，必须形成新的相邻才有效
+                return hasNewAdjacent ? 2 : 0;
+            } else {
+                // 如果移动前没有相邻，形成任意相邻就有效
+                return hasNewAdjacent ? 2 : 0;
+            }
+
         } finally {
-            // 恢复原始棋盘状态
             this.gems = originalGems;
         }
     }
+    
 
     private saveGame() {
         const gemData: IGemData[] = [];
@@ -1412,8 +1592,6 @@ public countEmptySlots(gems: { x: number, y: number }[], direction: { dx: number
             boardState: this.gems,
             gemGroupCountMap: this.gemGroupCountMap,
         };
-   //     console.log(this.gemGroupCountMap, "groupGroupCountMap")
-
         try {
             LocalStorageManager.setItem(LocalCacheKeys.GameSave, JSON.stringify(saveData));
         } catch (error) {
@@ -1452,24 +1630,23 @@ public countEmptySlots(gems: { x: number, y: number }[], direction: { dx: number
         if (!saveStr) return false;
         try {
             const saveData: GameSaveData = JSON.parse(saveStr);
-            console.error("===saveData====", saveData);
+           // console.error("===saveData====", saveData);
             this.matchHistory = saveData.matchHistory;
             this.updateScoreUI(saveData.score);
             this.moves = saveData.moves;
             this.gems = saveData.boardState;
             this.gemGroupCountMap = saveData.gemGroupCountMap;
-            this.validateGemCounts();
             let gemCount = 0;
             for (let i = 0; i < saveData.boardState.length; i++) {
                 let row = saveData.boardState[i];
-               // console.log(`Row ${i}:`, row);
                 for (let j = 0; j < row.length; j++) {
                     const gemType = row[j];
                     this.createGem(i, j, gemType);
                     gemCount++;
                 }
             }
-          //  console.error(`Total gems created: ${gemCount}`); // Log the total count
+            this.printBoardState();
+            this.customerManager.init(this, this.gemGroupCountMap, this.nodePool);
             console.log('Board and gems restored successfully.');
             return true;
         } catch (e) {
@@ -1477,16 +1654,7 @@ public countEmptySlots(gems: { x: number, y: number }[], direction: { dx: number
             return false;
         }
     }
-    // 添加日志方法
-private logPoolStatus(operation: string) {
-    if (this.nodePool) {
-        console.log(`对象池状态 [${operation}]:`, {
-            宝石节点数: this.nodePool.size(this.gemPrefab),
-            背景节点数: this.nodePool.size(this.gemBgPrefab),
-            食物节点数: this.nodePool.size(this.foodPrefab)
-        });
-    }
-}
+
     private clearBoard() {
         for (let i = 0; i < this.boardParams.rows; i++) {
             for (let j = 0; j < this.boardParams.columns; j++) {
@@ -1525,57 +1693,37 @@ private logPoolStatus(operation: string) {
       //  this.logPoolStatus('清理后');
       //  console.log(this.cubeNode.children.length, 'this.cubeNode.children.length');
     }
-    
-    public getRemovedGems(): IGemData[] {
-        const removedGems: IGemData[] = [];
-        for (let i = 0; i < this.boardParams.rows; i++) {
-            for (let j = 0; j < this.boardParams.columns; j++) {
-                if (this.board[i][j]) {
-                    const gem = this.board[i][j].getComponent(Gem);
-                    if (gem.isGemRemoved()) {
-                        removedGems.push(gem.getGemData());
-                    }
-                }
-            }
-        }
-        return removedGems;
-    }
-
-    public getGameStats() {
-        return {
-            score: this.score,
-            moves: this.moves,
-            matchCount: this.matchHistory.length,
-            matchHistory: this.matchHistory
-        };
-    }
     public resetGame() {
         // 1. 先移除存档
-        LocalStorageManager.removeItem(LocalCacheKeys.GameSave);
-        LocalStorageManager.removeItem(LocalCacheKeys.FoodStorage);
-        LocalStorageManager.removeItem(LocalCacheKeys.WaitingArea);
+        this.clearCache();
         // 2. 确保当前状态为空闲
         this.currentState = GameState.Idle;
     
         this.init()
     // 6. 启动游戏
-    this.startGame();
+        this.startGame();
+    }
+    clearCache() {
+        LocalStorageManager.removeItem(LocalCacheKeys.GameSave);
+        LocalStorageManager.removeItem(LocalCacheKeys.FoodStorage);
+        LocalStorageManager.removeItem(LocalCacheKeys.WaitingArea);
+        LocalStorageManager.removeItem(LocalCacheKeys.PropData);
     }
    
     public getConsecutivePushableGems(pos: { x: number, y: number }, direction: { dx: number, dy: number }): { x: number, y: number }[] {
         const pushableGems: { x: number, y: number }[] = [];
 
-        console.log('开始检查可推动宝石：');
-        console.log('当前位置:', pos);
-        console.log('推动方向:', direction);
-        console.log('当前棋盘状态:');
+        // console.log('开始检查可推动宝石：');
+        // console.log('当前位置:', pos);
+        // console.log('推动方向:', direction);
+        // console.log('当前棋盘状态:');
         this.printBoard();  // 添加这个方法来打印棋盘
 
         if (direction.dx !== 0) { // 水平方向
             const y = pos.y;
 
             if (direction.dx > 0) { // 向右推
-                console.log('向右推动检查:');
+             //   console.log('向右推动检查:');
                 let hasEmptySpace = false;
                 let emptyX = -1;
 
@@ -1584,7 +1732,7 @@ private logPoolStatus(operation: string) {
                     if (this.gems[y][x] === 0) {
                         hasEmptySpace = true;
                         emptyX = x;
-                        console.log('找到空位:', { x, y });
+                     //   console.log('找到空位:', { x, y });
                         break;
                     }
                 }
@@ -1592,11 +1740,11 @@ private logPoolStatus(operation: string) {
                 if (hasEmptySpace) {
                     for (let x = pos.x; x < emptyX; x++) {
                         pushableGems.push({ x, y });
-                        console.log('添加可推动宝石:', { x, y });
+                      //  console.log('添加可推动宝石:', { x, y });
                     }
                 }
             } else { // 向左推
-                console.log('向左推动检查:');
+              //  console.log('向左推动检查:');
                 let hasEmptySpace = false;
                 let emptyX = -1;
 
@@ -1604,7 +1752,7 @@ private logPoolStatus(operation: string) {
                     if (this.gems[y][x] === 0) {
                         hasEmptySpace = true;
                         emptyX = x;
-                        console.log('找到空位:', { x, y });
+                    //    console.log('找到空位:', { x, y });
                         break;
                     }
                 }
@@ -1612,7 +1760,7 @@ private logPoolStatus(operation: string) {
                 if (hasEmptySpace) {
                     for (let x = emptyX + 1; x <= pos.x; x++) {
                         pushableGems.push({ x, y });
-                        console.log('添加可推动宝石:', { x, y });
+                      //  console.log('添加可推动宝石:', { x, y });
                     }
                 }
             }
@@ -1620,7 +1768,7 @@ private logPoolStatus(operation: string) {
             const x = pos.x;
 
             if (direction.dy > 0) { // 向上推
-                console.log('向上推动检查:');
+             //   console.log('向上推动检查:');
                 let hasEmptySpace = false;
                 let emptyY = -1;
 
@@ -1628,7 +1776,7 @@ private logPoolStatus(operation: string) {
                     if (this.gems[y][x] === 0) {
                         hasEmptySpace = true;
                         emptyY = y;
-                        console.log('找到空位:', { x, y });
+                     //   console.log('找到空位:', { x, y });
                         break;
                     }
                 }
@@ -1636,11 +1784,11 @@ private logPoolStatus(operation: string) {
                 if (hasEmptySpace) {
                     for (let y = emptyY + 1; y <= pos.y; y++) {
                         pushableGems.push({ x, y });
-                        console.log('添加可推动宝石:', { x, y });
+                     //   console.log('添加可推动宝石:', { x, y });
                     }
                 }
             } else { // 向下推
-                console.log('向下推动检查:');
+              //  console.log('向下推动检查:');
                 let hasEmptySpace = false;
                 let emptyY = -1;
 
@@ -1648,7 +1796,7 @@ private logPoolStatus(operation: string) {
                     if (this.gems[y][x] === 0) {
                         hasEmptySpace = true;
                         emptyY = y;
-                        console.log('找到空位:', { x, y });
+                      //  console.log('找到空位:', { x, y });
                         break;
                     }
                 }
@@ -1656,24 +1804,24 @@ private logPoolStatus(operation: string) {
                 if (hasEmptySpace) {
                     for (let y = pos.y; y < emptyY; y++) {
                         pushableGems.push({ x, y });
-                        console.log('添加可推动宝石:', { x, y });
+                      //  console.log('添加可推动宝石:', { x, y });
                     }
                 }
             }
         }
-        console.log('最终可推动宝石列表:', pushableGems);
+      //  console.log('最终可推动宝石列表:', pushableGems);
         return pushableGems;
     }
     updateLevel(level: number) {
         this._level = level;
         LocalStorageManager.setItem(LocalCacheKeys.Level, "" + this._level);
         if (this.levelLabel) {
-            this.levelLabel.string = "" + this._level;
+            this.levelLabel.string = "第" + this._level + "波";
         }
     }
     // 添加打印棋盘的辅助方法
-    private printBoard() {
-        console.log('棋盘状态:');
+    public printBoard() {
+       // console.log('棋盘状态:');
         for (let y = 0; y < this.boardParams.rows; y++) {
             let row = '';
             for (let x = 0; x < this.boardParams.columns; x++) {
@@ -1681,6 +1829,17 @@ private logPoolStatus(operation: string) {
             }
             console.log(row);
         }
+    }
+    public printGems() {
+      //  console.log('=== Gems Board State ===');
+        for (let row = 0; row < this.boardParams.rows; row++) {
+            let line = '';
+            for (let col = 0; col < this.boardParams.columns; col++) {
+                line += `${this.gems[row][col] ?? 0}  `;
+            }
+            console.log(line);
+        }
+        console.log('=====================');
     }
     // 检查是否可以在指定方向推动
     public canPushInDirection(pos: { x: number, y: number }, direction: { dx: number, dy: number }): boolean {
@@ -1763,9 +1922,11 @@ private logPoolStatus(operation: string) {
     }
     // 道具
     public onHintClicked() {
+        if (this.propManager.getHintUsed()) {
+            this.tipUI.showTips("此回合提示道具已使用");
+            return;
+        }
         if (this.propManager.getHintCount() <= 0) {
-
-            console.warn("没有提示道具可用。");
             const uiManager = UIManager.instance;
             if (uiManager) {
                 console.error("onHintClicked", uiLoadingConfigs.TipPropsUrl);
@@ -1773,12 +1934,17 @@ private logPoolStatus(operation: string) {
             }
         } else {
             // 使用提示道具
-            this.helperManager.showTips();
-            this.propManager.useHint();
+            if (this.helperManager.showTips()) {
+                this.propManager.useHint();
+            }
         }
     }
     // 交换道具
     private onExchangeClicked() {
+        if (this.propManager.getExchangeUsed()) {
+            this.tipUI.showTips("此回合交换道具已使用");
+            return;
+        }
         if (this.propManager.getExchangeCount() <= 0) { 
             const uiManager = UIManager.instance;
             if (uiManager) {
@@ -1832,16 +1998,16 @@ private logPoolStatus(operation: string) {
         }
     }
     // 添加这个方法来置灰单个宝石
-private grayOutGem(gem: Node, isGray: boolean) {
-    const sprite = gem.getChildByName('Item').getComponent(Sprite);
-    if (sprite) {
-        if (isGray) {
-            sprite.color = new Color(155, 155, 155, 255); // 灰色
-        } else {
-            sprite.color = Color.WHITE; // 恢复正常颜色
+    private grayOutGem(gem: Node, isGray: boolean) {
+        const sprite = gem.getChildByName('Item').getComponent(Sprite);
+        if (sprite) {
+            if (isGray) {
+                sprite.color = new Color(155, 155, 155, 255); // 灰色
+            } else {
+                sprite.color = Color.WHITE; // 恢复正常颜色
+            }
         }
     }
-}
     private grayOutNonHighlightedGems() {
         // 遍历棋盘上的所有宝石
         for (let y = 0; y < this.boardParams.rows; y++) {
@@ -1853,37 +2019,12 @@ private grayOutGem(gem: Node, isGray: boolean) {
                 const isHighlighted = this.highlightState.highlightedGems.some(
                     pos => pos.x === x && pos.y === y
                 );
-                
-                // // 检查是否是被点击的宝石
-                // const isClickedGem = this.highlightState.clickedPos && 
-                //                    this.highlightState.clickedPos.x === x && 
-                //                    this.highlightState.clickedPos.y === y;
     
                 if (!isHighlighted) {
                     console.log('非高亮宝石置灰', gem);
                     // 将非高亮宝石置灰并禁用点击
                     this.grayOutGem(gem, true);
                    // gem.off(Node.EventType.TOUCH_END); // 移除点击监听器
-                }
-            }
-        }
-    }
-    // private highlightGem(gem: Node, highlight: boolean) {
-    //     // 实现宝石的高亮效果
-    //     const sprite = gem.getChildByName('Item').getComponent(Sprite);
-    //     if (sprite) {
-    //         // 高亮时使用正常颜色，未高亮时使用暗色
-    //         sprite.color = !highlight ? 
-    //             new Color(255, 255, 255, 255) : // 正常颜色
-    //             new Color(150, 150, 150, 255);  // 暗色
-    //     }
-    // }
-    private clearAllHighlights() {
-        for (let y = 0; y < this.boardParams.rows; y++) {
-            for (let x = 0; x < this.boardParams.columns; x++) {
-                const gem = this.board[y][x];
-                if (gem) {
-                    this.highlightGem(gem, false);
                 }
             }
         }
@@ -2036,6 +2177,10 @@ private resetHighlightState() {
             console.warn("当前有其他操作正在进行，无法洗牌。");
             return;
         }
+        if (this.propManager.getShuffleUsed()) {
+            this.tipUI.showTips("此回合打乱道具已使用");
+            return;
+        }
         if (this.propManager.getShuffleCount() <= 0) {
             console.warn("没有打乱道具可用。");
             const uiManager = UIManager.instance;
@@ -2048,55 +2193,58 @@ private resetHighlightState() {
             this.propManager.useShuffle();
         }
     }
-
     private shuffleLogic() {
         this.currentState = GameState.Shuffling;
-        // 标记开始洗牌
         try {
             let hasMatch = false;
-            let maxAttempts = 100; // 限制洗牌尝试次数以防止无限循环
+            let maxAttempts = 100;
             let attempts = 0;
             let tempGems: number[][];
-
+    
             while (!hasMatch && attempts < maxAttempts) {
                 attempts++;
-                // Initialize a temporary array for shuffling
+                // 复制当前棋盘状态
                 tempGems = this.gems.map(row => [...row]);
-
-                // Flatten all gems (including empty spaces) for shuffling
-                const allGems = [];
+    
+                // 收集所有非空位置的宝石及其位置
+                const gemsToShuffle: { value: number, pos: { x: number, y: number } }[] = [];
                 for (let y = 0; y < tempGems.length; y++) {
                     for (let x = 0; x < tempGems[y].length; x++) {
-                        allGems.push(tempGems[y][x]);
+                        if (tempGems[y][x] !== 0) {
+                            gemsToShuffle.push({
+                                value: tempGems[y][x],
+                                pos: { x, y }
+                            });
+                        }
                     }
                 }
-
-                // Shuffle all gems
-                for (let i = allGems.length - 1; i > 0; i--) {
+    
+                // 只打乱宝石的值
+                for (let i = gemsToShuffle.length - 1; i > 0; i--) {
                     const j = Math.floor(Math.random() * (i + 1));
-                    [allGems[i], allGems[j]] = [allGems[j], allGems[i]];
+                    // 只交换值,保持位置不变
+                    [gemsToShuffle[i].value, gemsToShuffle[j].value] = 
+                    [gemsToShuffle[j].value, gemsToShuffle[i].value];
                 }
-
-                // Rebuild the gem array
-                let index = 0;
-                for (let y = 0; y < this.boardParams.rows; y++) {
-                    for (let x = 0; x < this.boardParams.columns; x++) {
-                        tempGems[y][x] = allGems[index++];
-                    }
-                }
-
-                // Check if there are any possible matches
+    
+                // 将打乱后的宝石放回原位置
+                gemsToShuffle.forEach(gem => {
+                    tempGems[gem.pos.y][gem.pos.x] = gem.value;
+                });
+    
+                // 检查是否有可能的匹配
                 hasMatch = this.hasPossibleMatch(tempGems);
             }
-
+    
             if (!hasMatch) {
                 console.error("在最大尝试次数后未能洗牌到可解状态。");
                 return;
             }
-
-            // Assign the shuffled gems to the actual board
+    
+            // 更新棋盘状态
             this.gems = tempGems;
-
+    
+            // 更新实际的宝石节点
             for (let y = 0; y < this.boardParams.rows; y++) {
                 for (let x = 0; x < this.boardParams.columns; x++) {
                     const gemType = this.gems[y][x];
@@ -2109,12 +2257,15 @@ private resetHighlightState() {
                     }
                 }
             }
+    
             console.log('洗牌后的棋盘状态:');
             this.printBoard();
         } finally {
-            this.currentState = GameState.Idle; // 标记洗牌结束
+            this.currentState = GameState.Idle;
         }
     }
+
+    
 
     private updateGemGroupCountMap(gemType: number, decrement: number = 1) {
         if (this.gemGroupCountMap[gemType]) {

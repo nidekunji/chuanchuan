@@ -2,7 +2,7 @@
  * @Author: Aina
  * @Date: 2025-01-05 16:41:56
  * @LastEditors: Aina
- * @LastEditTime: 2025-01-16 02:18:29
+ * @LastEditTime: 2025-02-14 01:50:07
  * @FilePath: /chuanchuan/assets/game/scripts/FailUI.ts
  * @Description: 
  * 
@@ -61,7 +61,6 @@ export class FailUI extends Component {
         }
     }
     onClickMainMenu() {
-        console.log("onClickMainMenu");
         assetManager.loadBundle("main2", (err, bundle) => {
             if (err) {
                 console.error("Failed to load main2 bundle:", err);

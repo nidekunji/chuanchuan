@@ -2,7 +2,7 @@
  * @Author: Aina
  * @Date: 2025-01-10 04:54:34
  * @LastEditors: Aina
- * @LastEditTime: 2025-02-07 18:20:57
+ * @LastEditTime: 2025-02-13 22:34:45
  * @FilePath: /chuanchuan/assets/game/scripts/CustomerComponent.ts
  * @Description: 
  * 
@@ -19,9 +19,9 @@ import { LocalCacheKeys } from '../../app/config/GameConfig';
 const { ccclass, property } = _decorator;
 
 const waitingPositions = {
-    1: new Vec3(-287, 24, 0),
-    2: new Vec3(-178, 24, 0),
-    3: new Vec3(-67, 24, 0),
+    1: new Vec3(-114, 3, 0),
+    2: new Vec3(-6, 15, 0),
+    3: new Vec3(103, 2, 0),
     4: new Vec3(42, 24, 0),
     5: new Vec3(155, 24, 0),
     6: new Vec3(262, 24, 0)
@@ -218,7 +218,7 @@ private handleStateChange() {
             this.setFoodUI();
             break;
         case CustomerState.IsReturning:
-            this.FinshedEatFood();
+          //  this.FinshedEatFood();
             break;
         case CustomerState.JoiningQueue:
             this.hideFoodUI();

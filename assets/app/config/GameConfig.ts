@@ -39,6 +39,11 @@ export const CGameData = {
     ResetCardAnimUI: "scene/prefab/ui/ResetCardAnimUI"
 }
 export const uiLoadingConfigs: { [key: string]: UILoadConfig } = {
+    StoreUIUrl: {
+        name: "StoreUI",
+        bundle: "main2",
+        path: "prefab/StoreUI"
+    },
     SettingUrl: {
         name: "SettingUI",
         bundle: "setting",
@@ -83,6 +88,11 @@ export const uiLoadingConfigs: { [key: string]: UILoadConfig } = {
         name: "CommonVedioUI",
         bundle: "game",
         path: "prefab/CommonVedioUI"
+    },
+    LayerUIUrl: {
+        name: "LayerUI",
+        bundle: "game",
+        path: "prefab/LayerUI"
     }
 };
 /**本地缓存字段名称 */
@@ -95,7 +105,15 @@ export const LocalCacheKeys = {
     Level: "level",//等级
     FoodStorage: "foodStorage",//食物存放区
     WaitingArea: "waitingArea",//等待区
+    PropData: "propData",//道具数据
     // Add more keys as needed
+}
+export const levelConfig: { [key: number]: number[][] } = {
+    1: [
+        [4, 1, 1, 1],
+        [2, 4, 2, 2],
+        [4, 3, 3, 3]
+    ]
 }
 export const NewUserGameConfig = {
     row: 9,//行
@@ -222,23 +240,23 @@ export const CustomerMoveConfig = {
     speed: 100, // 顾客移动速度
     waypoints: {
         1: [
-            new Vec3(-285, 24, 1),
-            new Vec3(-200, 89, 1),
-            new Vec3(-100, 143, 1),
+            new Vec3(-92, 57, 1),
+            new Vec3(-48, 95, 1),
+            new Vec3(-41, 135, 1),
             new Vec3(-25, 212, 1),  // shifted left
             new Vec3(-25, 700, 1)   // shifted left
         ],
         2: [
-            new Vec3(-178, 24, 1),
-            new Vec3(-97, 75, 1),
-            new Vec3(-30, 163, 1),
-            new Vec3(-25, 211, 1),  // shifted left
-            new Vec3(-25, 700, 1)   // shifted left
+            new Vec3(-6, 57, 1),
+            new Vec3(-48, 95, 1),
+            new Vec3(-41, 135, 1),
+            new Vec3(-25, 211, 1),  
+            new Vec3(-25, 700, 1)  
         ],
         3: [
-            new Vec3(-67, 24, 1),
-            new Vec3(-15, 81, 1),
-            new Vec3(-14, 155, 1),  // shifted left
+            new Vec3(57, 33, 1),
+            new Vec3(-48, 95, 1),
+            new Vec3(-41, 135, 1),
             new Vec3(-25, 700, 1)   // shifted left
         ],       
         4: [
@@ -306,26 +324,22 @@ export const CustomerMoveConfig = {
 //         ]
 //     }
 // }
+
 export const QueueMoveConfig = {
     speed: 100, // 顾客移动速度
     waypoints: {
         1: [
-            new Vec3(-24, 159, 1),
-            new Vec3(-136, 96, 1),
-            new Vec3(-237, 39, 1),
-            new Vec3(-287, 24, 1)
+            new Vec3(-15, 86, 1),
+            new Vec3(-83, 36, 1),
+            new Vec3(-114, 3, 1),
         ],
         2: [
-            new Vec3(-24, 159, 1),
-            new Vec3(28, 150, 1),
-            new Vec3(-100, 80, 1),
-            new Vec3(-178, 24, 1)
+            new Vec3(5, 61, 1),
+            new Vec3(-6, 15, 0)
         ],
         3: [
-            new Vec3(-24, 159, 1),
-            new Vec3(-26, 115, 1),
-            new Vec3(-60, 65, 1),
-            new Vec3(-67, 24, 1)
+            new Vec3(85, 78, 1),
+            new Vec3(103, 2, 0),
         ],
         4: [
             new Vec3(-24, 159, 1),
@@ -351,13 +365,13 @@ export const EnterQueueMoveConfig = {
     speed: 100, // 顾客移动速度
     waypoints: {
         1: [
-            new Vec3(30, 198, 1),//25
+            new Vec3(43, 137, 1),//第一个
         ],
         2: [
-            new Vec3(1, 250, 1),// 250
+            new Vec3(28, 219, 1),// 第二个
         ],
         3: [
-            new Vec3(3, 310, 1),// 280
+            new Vec3(61, 310, 1),// 第三个
         ],
     }
 }

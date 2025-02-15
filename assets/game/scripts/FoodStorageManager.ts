@@ -24,7 +24,6 @@ export class FoodStorageManager extends Component {
      * 初始化存放区
      */
     public init() {
-       
         const loadedData = this.loadCachedStorageData();
         this.reset(); // 先读缓存再清空
         if (loadedData) {
@@ -108,7 +107,7 @@ export class FoodStorageManager extends Component {
         // 将桌子的世界坐标转换为 node 的本地坐标
         const targetPosition = this.node.getComponent(UITransform)
             .convertToNodeSpaceAR(tableNode.getWorldPosition());
-        targetPosition.y +=5;
+        // targetPosition.y +=5;
         return targetPosition;
     }
     private loadPrefab(type: 'Lock' | 'Food', slotId: number, foodType?: number): Promise<void> {

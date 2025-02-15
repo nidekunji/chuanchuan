@@ -39,12 +39,13 @@ export class TipUI extends Component {
          const moveTween = this.node.position.clone().add3f(0, 50, 0); // 向上移动的目标位置
          // 执行动画：同时移动和淡出
          const sequence = tween(this.node)
-         .to(1, { 
+         .to(1.5, { 
              position: moveTween,
              [opacityComp.uuid]: {
                  opacity: 0
              }
          }, { easing: 'backOut' }) // 移动和淡出同时进行
+         .delay(.5)
          .call(() => {
              this.node.active = false; // 动画结束后隐藏节点
          })

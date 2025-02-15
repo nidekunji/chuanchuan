@@ -130,7 +130,7 @@
     },
     "_contentSize": {
       "__type__": "cc.Size",
-      "width": 450,
+      "width": 600,
       "height": 50
     },
     "_anchorPoint": {
@@ -266,7 +266,7 @@
     },
     "_contentSize": {
       "__type__": "cc.Size",
-      "width": 80,
+      "width": 120,
       "height": 63
     },
     "_anchorPoint": {
@@ -305,8 +305,8 @@
     "_string": "提示文本",
     "_horizontalAlign": 1,
     "_verticalAlign": 1,
-    "_actualFontSize": 20,
-    "_fontSize": 20,
+    "_actualFontSize": 30,
+    "_fontSize": 30,
     "_fontFamily": "Arial",
     "_lineHeight": 50,
     "_overflow": 0,
@@ -352,7 +352,7 @@
     },
     "_contentSize": {
       "__type__": "cc.Size",
-      "width": 450,
+      "width": 600,
       "height": 50
     },
     "_anchorPoint": {

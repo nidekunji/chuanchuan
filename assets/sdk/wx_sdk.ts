@@ -228,6 +228,7 @@ export class wx_sdk implements isdk {
     protected rewardAd: any[] = [];
     protected videoAdCallback: (result: number) => void = null;
     protected callVedioCallback(r: number) {
+        window['cc'].audioEngine.pauseMusic();
         if (this.videoAdCallback) {
             if (window['cc'] && window['cc'].audioEngine) {
                 window['cc'].audioEngine.resumeAll();
@@ -235,8 +236,10 @@ export class wx_sdk implements isdk {
             this.videoAdCallback(r)
             this.videoAdCallback = null;
         }
+        
     }
     showRewardedVideoAd(callback: (result: number) => void, index: number = 0): void {
+        
         this.videoAdCallback = callback;
         let videoAd = this.rewardAd[index]
         if (!videoAd) {

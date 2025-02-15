@@ -2,7 +2,7 @@
  * @Author: Aina
  * @Date: 2024-12-19 01:17:40
  * @LastEditors: Aina
- * @LastEditTime: 2025-02-08 23:27:30
+ * @LastEditTime: 2025-02-16 03:13:02
  * @FilePath: /chuanchuan/assets/main/script/Main.ts
  * @Description: 
  * 
@@ -16,6 +16,7 @@ import { AudioManager } from '../../common/scripts/AudioManager';
 import { UIManager } from '../../common/scripts/UIManager';
 import { sdk } from '../../sdk/sdk';
 import { SDKDir, ResultState, getLeftTopRect, SDKUserButtonType } from '../../sdk/sdk_define';
+import { EventDispatcher } from '../../common/scripts/EventDispatcher';
 @ccclass('Main')
 export class HomeButtonAnimation extends Component {
     @property(Node)
@@ -39,10 +40,9 @@ export class HomeButtonAnimation extends Component {
             director.addPersistRootNode(audioManagerNode);
             this.checkAndPlayBackgroundMusic();
         }
-        //LocalStorageManager.removeItem(LocalCacheKeys.FoodStorage);
-       // LocalStorageManager.clearAllCache();
+     
         sdk.p.showBanner(0, SDKDir.BOTTOM_MID)
-    
+        this.initSetting();
         sdk.p.getUserInfo((r: ResultState, data: any) => {
             this.rankNode.active = r == ResultState.YES;
             if (r == ResultState.NO) {
@@ -58,6 +58,16 @@ export class HomeButtonAnimation extends Component {
                 })
             }
         })
+        const eventDispatcher = EventDispatcher.getInstance();
+        if (eventDispatcher) {
+            eventDispatcher.on('enterGame', this.enterGame.bind(this));
+        } else {
+            console.error("EventDispatcher not found!!!");
+        }
+    }
+    enterGame() {
+        console.log("enterGame");
+        director.loadScene(this._sceneName);
     }
     initSetting() {
         let level = LocalStorageManager.getItem(LocalCacheKeys.Level)
@@ -69,8 +79,6 @@ export class HomeButtonAnimation extends Component {
         }
     }
     start() {
-
-        // 
         this.preloadGameBundle()
         if (!this.startBtn) {
             console.error("Button node is not assigned!");
@@ -86,7 +94,7 @@ export class HomeButtonAnimation extends Component {
             .start();
 
         // 添加按钮点击事件监听
-        this.startBtn.on(Node.EventType.TOUCH_END, this.onButtonClick, this);
+        this.startBtn.on(Node.EventType.TOUCH_END, this.startGame, this);
     }
     private checkAndPlayBackgroundMusic() {
         LocalStorageManager.setItem(LocalCacheKeys.BackgroundMusic, 'true');
@@ -97,7 +105,7 @@ export class HomeButtonAnimation extends Component {
             console.error("AudioManager component not found on this node");
         }
     }
-    onButtonClick() {
+    startGame() {
         if (window['wx']) {
             sdk.p.destroyInfoButton()
         }
@@ -106,12 +114,20 @@ export class HomeButtonAnimation extends Component {
             this._buttonTween.stop(); // 停止动画
             this.startBtn.setScale(new Vec3(1, 1, 1)); // 重置为原始大小
         }
-        sdk.p.login('', (state: ResultState, data: any) => {
-            if (state == ResultState.YES) {
-                director.loadScene(this._sceneName);
-            }
-        })
-
+        const saveStr = LocalStorageManager.getItem(LocalCacheKeys.GameSave);
+        if (!saveStr) {
+            sdk.p.login('', (state: ResultState, data: any) => {
+                if (state == ResultState.YES) {
+                    this.enterGame();
+                }
+            })
+        } else {
+            sdk.p.login('', (state: ResultState, data: any) => {
+                if (state == ResultState.YES) {
+                    UIManager.instance.openUI(uiLoadingConfigs.StoreUIUrl);
+                }
+            })
+        } 
     }
 
     private preloadGameBundle() {
@@ -147,9 +163,14 @@ export class HomeButtonAnimation extends Component {
     onDestroy() {
         // 清理事件监听
         if (this.startBtn && this.startBtn.isValid) {
-            this.startBtn.off(Node.EventType.TOUCH_END, this.onButtonClick, this);
+            this.startBtn.off(Node.EventType.TOUCH_END, this.startGame, this);
         }
-
+        const eventDispatcher = EventDispatcher.getInstance();
+        if (eventDispatcher) {
+            eventDispatcher.off('enterGame', this.enterGame.bind(this));
+        } else {
+            console.error("EventDispatcher not found!!!");
+        }
         sdk.p.hideBanner()
     }
 
@@ -157,6 +178,13 @@ export class HomeButtonAnimation extends Component {
         const uiManager = UIManager.instance;
         UIManager.instance.openUI(uiLoadingConfigs.RankUIUrl);
         sdk.p.destroyInfoButton()
+    }
+    clearCache() {
+        LocalStorageManager.clearAllCache();
+        LocalStorageManager.setItem(LocalCacheKeys.Level, '1')
+        LocalStorageManager.setItem(LocalCacheKeys.BackgroundMusic, 'true');
+        LocalStorageManager.setItem(LocalCacheKeys.ShakeEffect, 'true');
+        LocalStorageManager.setItem(LocalCacheKeys.SoundEffects, 'true');
     }
 
     onRankBtnClick() {
