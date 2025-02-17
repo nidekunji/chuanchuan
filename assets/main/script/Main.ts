@@ -2,7 +2,7 @@
  * @Author: Aina
  * @Date: 2024-12-19 01:17:40
  * @LastEditors: Aina
- * @LastEditTime: 2025-02-16 03:13:02
+ * @LastEditTime: 2025-02-17 16:42:17
  * @FilePath: /chuanchuan/assets/main/script/Main.ts
  * @Description: 
  * 
@@ -205,5 +205,8 @@ export class HomeButtonAnimation extends Component {
                 }
             }
         })
+    }
+    showIconList() {
+        UIManager.instance.openUI(uiLoadingConfigs.IconListUIUrl);
     }
 }

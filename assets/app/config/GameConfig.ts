@@ -93,6 +93,11 @@ export const uiLoadingConfigs: { [key: string]: UILoadConfig } = {
         name: "LayerUI",
         bundle: "game",
         path: "prefab/LayerUI"
+    },
+    IconListUIUrl: {
+        name: "IconListUI",
+        bundle: "main2",
+        path: "prefab/IconListUI"
     }
 };
 /**本地缓存字段名称 */
@@ -389,4 +394,33 @@ export const CommonVedioUIConfig = {
         title: "看广告，免费获得10000金币",
         subtitle: "看广告，免费获得10000金币",
     }
+}
+export const lockLevel = 5;
+export function getUnlockedCustomerLevel(level: number): number {
+    if (level < 5) return 1;
+    return Math.min(Math.floor((level - lockLevel) / lockLevel) + 2, 7);
+}
+
+export const iconList = {
+   1: {
+        name: '老鼠',
+   },
+   2: {
+        name: '小白兔',
+   },
+   3: {
+        name: '卡皮吧啦',
+   },
+   4: {
+        name: '小狗',
+   },
+   5: {
+        name: '浣熊',
+   },
+   6: {
+        name: '小蛇',
+   },
+   7:{
+        name: '狐狸',
+   }
 }

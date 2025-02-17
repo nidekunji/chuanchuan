@@ -1,9 +1,29 @@
 // assets/core/scripts/manager/ResourceManager.ts
 
-import { _decorator, assetManager, Asset, Prefab, Texture2D, AudioClip, SpriteFrame   } from "cc";
+import { _decorator, assetManager, Asset, Prefab, Texture2D, AudioClip, SpriteFrame, resources   } from "cc";
 
 export class ResourceManager {
     private static bundles: { [key: string]: any } = {}; // 使用 any 类型以适应不同的环境
+       /**
+     * 从resources文件夹加载资源
+     * @param path resources文件夹下的资源路径（不需要包含'resources/'前缀）
+     * @param type 资源类型
+     * @param callback 回调函数
+     */
+       static loadFromResources<T extends Asset>(path: string, type: new () => T, callback?: (err: Error | null, asset: T | null) => void) {
+        resources.load(path, type, (err, asset: T) => {
+            if (err) {
+                console.error(`Failed to load resource from resources folder at ${path}: ${err}`);
+                if (callback) {
+                    callback(err, null);
+                }
+                return;
+            }
+            if (callback) {
+                callback(null, asset);
+            }
+        });
+    }
     /**
      * 加载单个资源
      * @param path 资源路径
@@ -19,6 +39,14 @@ export class ResourceManager {
             }
             callback(null, asset);
         });
+    }
+     /**
+     * 加载精灵帧
+     * @param path 精灵帧路径
+     * @param callback 回调函数
+     */
+     static loadSpriteFrame(path: string, callback: (err: Error | null, spriteFrame: SpriteFrame | null) => void) {
+        this.loadResource<SpriteFrame>(path, SpriteFrame, callback);
     }
 
     /**
