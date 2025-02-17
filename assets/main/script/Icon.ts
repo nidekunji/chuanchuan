@@ -2,7 +2,7 @@
  * @Author: Aina
  * @Date: 2025-02-17 15:51:02
  * @LastEditors: Aina
- * @LastEditTime: 2025-02-17 18:48:01
+ * @LastEditTime: 2025-02-17 18:57:11
  * @FilePath: /chuanchuan/assets/main/script/Icon.ts
  * @Description: 
  * 
@@ -12,6 +12,7 @@
 import { _decorator, Component, Label, Node, Sprite, SpriteFrame, tween, Vec3 } from 'cc';
 import { iconList } from '../../app/config/GameConfig';
 import { ResourceManager } from '../../common/scripts/ResourceManager';
+import { AudioManager } from '../../common/scripts/AudioManager';
 const { ccclass, property } = _decorator;
 
 @ccclass('Icon')
@@ -49,7 +50,6 @@ export class Icon extends Component {
     }
 
     unlockIcon (level: number) {  
-            
         if (level > 7) {
             level = Math.floor(Math.random() * 7) + 1;
         } 
@@ -59,12 +59,10 @@ export class Icon extends Component {
         let path = `texture/${level}/spriteFrame`
         ResourceManager.loadFromResources(path, SpriteFrame, (err, spriteFrame) => {
             if (err) {
-                console.error("加载精灵帧失败:", err);
                 return;
             }
             this.icon.spriteFrame = spriteFrame;
-            // 使用加载到的 spriteFrame
-            console.log("精灵帧加载成功:", spriteFrame);
+            
         });
     }
 
@@ -92,8 +90,9 @@ export class Icon extends Component {
         }
     }
     public setSelected(isSelected: boolean) {
-        console.log('isSelected', isSelected, this.node, this.isUnlock);
+       // console.log('isSelected', isSelected, this.node, this.isUnlock);
         if (this.isUnlock) {
+            AudioManager.instance.playButtonClick();
             this.selectIcon.active = isSelected;
             
             // 停止当前正在进行的所有动作

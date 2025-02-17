@@ -2,7 +2,7 @@
  * @Author: Aina
  * @Date: 2025-02-17 16:12:53
  * @LastEditors: Aina
- * @LastEditTime: 2025-02-17 18:41:44
+ * @LastEditTime: 2025-02-17 18:53:35
  * @FilePath: /chuanchuan/assets/main/script/IconListUI.ts
  * @Description: 
  * 
@@ -38,7 +38,7 @@ export class IconListUI extends Component {
         this.totalLockNum.string = "客人(" + this.unLockNum +"" + "/" + this.totalNum.toString() +")";
     }
     private getCurrentLevel(): number {
-        return 60;
+       
         let level = LocalStorageManager.getItem(LocalCacheKeys.Level)
         return level ? parseInt(level) : 1;
     }
@@ -52,7 +52,12 @@ export class IconListUI extends Component {
     }
         // 添加处理icon选中的方法
         private onIconSelected(node: Node, iconComponent: Icon) {
-            console.log('onIconSelected', node, iconComponent);
+              // 如果点击的是当前选中的icon，取消选中
+              if (this.selectedIconNode === node) {
+                iconComponent.setSelected(false);
+                this.selectedIconNode = null;
+                return;
+            }
             // 如果之前有选中的icon，取消其选中状态
             if (this.selectedIconNode && this.selectedIconNode !== node) {
                 const prevIconComp = this.selectedIconNode.getComponent(Icon);
@@ -79,7 +84,7 @@ export class IconListUI extends Component {
                 let iconComponent = node.getComponent(Icon);
                 if (iconComponent) {
                     iconComponent.init(isUnlocked, level);
-                    node.on(Node.EventType.TOUCH_END, () => {
+                    node.on(Node.EventType.TOUCH_START, () => {
                         if (isUnlocked) {
                             this.onIconSelected(node, iconComponent);
                         }
