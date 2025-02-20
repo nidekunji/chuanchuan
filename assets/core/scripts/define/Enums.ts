@@ -141,6 +141,7 @@ export enum DragDirection {
 // 为了保持类型安全，添加类型定义
 export type EModuleType = typeof EModuleType[keyof typeof EModuleType];// 定义一个枚举来表示游戏的不同状态
 export enum GameState {
+    Null = 'Null',
     Idle = 'Idle',
     Processing = 'Processing',
     Shuffling = 'Shuffling',

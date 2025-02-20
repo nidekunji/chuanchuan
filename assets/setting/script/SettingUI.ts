@@ -2,7 +2,7 @@
  * @Author: Aina
  * @Date: 2025-01-14 04:28:04
  * @LastEditors: Aina
- * @LastEditTime: 2025-02-14 17:35:11
+ * @LastEditTime: 2025-02-19 06:39:32
  * @FilePath: /chuanchuan/assets/setting/script/SettingUI.ts
  * @Description: 
  * 
@@ -47,7 +47,6 @@ export class SettingUI extends Component {
          }
     }
     onClickReset() {
-        console.log("onClickReset");
         UIManager.instance.closeUI(uiLoadingConfigs.SettingUrl.name);
         const eventDispatcher = EventDispatcher.getInstance();
         if (eventDispatcher) {
@@ -57,15 +56,14 @@ export class SettingUI extends Component {
         }
     }
     abandonChallenge() {
-        // Close the current UI
-      //  this.onClickReset();
       LocalStorageManager.removeItem(LocalCacheKeys.GameSave);
       LocalStorageManager.removeItem(LocalCacheKeys.FoodStorage);
       LocalStorageManager.removeItem(LocalCacheKeys.WaitingArea);
       LocalStorageManager.removeItem(LocalCacheKeys.PropData);
-        UIManager.instance.closeUI(uiLoadingConfigs.SettingUrl.name);
-        UIManager.instance.openUI(uiLoadingConfigs.FailUrl);
+      UIManager.instance.closeUI(uiLoadingConfigs.SettingUrl.name);
+      UIManager.instance.openUI(uiLoadingConfigs.FailUrl);
     }
+  
 
     onClickExit() {
         UIManager.instance.closeUI(uiLoadingConfigs.SettingUrl.name);

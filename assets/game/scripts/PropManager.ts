@@ -2,7 +2,7 @@
  * @Author: Aina
  * @Date: 2025-01-16 02:50:55
  * @LastEditors: Aina
- * @LastEditTime: 2025-02-14 01:46:08
+ * @LastEditTime: 2025-02-21 01:07:36
  * @FilePath: /chuanchuan/assets/game/scripts/PropManager.ts
  * @Description: 
  * 
@@ -40,6 +40,10 @@ export class PropManager extends Component {
     private shuffleUsed: number = 0;
     private exchangeUsed: number = 0;
 
+    private readonly MAX_HINT_USAGE = 0;
+    private readonly MAX_SHUFFLE_USAGE = 0;
+    private readonly MAX_EXCHANGE_USAGE = 0;
+
     public init(gameBoard: GameBoard) {
         this._gameBoard = gameBoard;
         this.loadFromStorage();
@@ -52,9 +56,9 @@ export class PropManager extends Component {
             this.hintCount = data.hintCount || 0;
             this.shuffleCount = data.shuffleCount || 0;
             this.exchangeCount = data.exchangeCount || 0;
-            this.hintUsed = data.hintUsed || 0;
-            this.shuffleUsed = data.shuffleUsed || 0;
-            this.exchangeUsed = data.exchangeUsed || 0;
+            this.hintUsed = data.hintUsed || this.MAX_HINT_USAGE;
+            this.shuffleUsed = data.shuffleUsed || this.MAX_SHUFFLE_USAGE;
+            this.exchangeUsed = data.exchangeUsed || this.MAX_EXCHANGE_USAGE;
         } else {
             this.resetProps();
         }
@@ -133,9 +137,9 @@ export class PropManager extends Component {
         this.shuffleCount = 0;
         this.exchangeCount = 0;
         // 重置使用状态
-        this.hintUsed = 0;
-        this.shuffleUsed = 0;
-        this.exchangeUsed = 0;
+        this.hintUsed = this.MAX_HINT_USAGE;
+        this.shuffleUsed = this.MAX_SHUFFLE_USAGE;
+        this.exchangeUsed = this.MAX_EXCHANGE_USAGE;
         LocalStorageManager.removeItem(LocalCacheKeys.PropData);
         this.updateView();
     }
@@ -195,6 +199,7 @@ export class PropManager extends Component {
     public getHintCount() {
         return this.hintCount;
     }
+    
     public getHintUsed() {
         if (this.hintUsed >= 1) {
             return true;
@@ -217,6 +222,15 @@ export class PropManager extends Component {
     }
     public getExchangeUsed() {
         if (this.exchangeUsed >= 2) {
+            return true;
+        }
+        return false;
+    }
+    public hasAvailableProps(): boolean {
+        if (!this.getHintUsed() || !this.getShuffleUsed() || !this.getExchangeUsed()) {
+            return true;
+        }
+        if ((this.hintCount > 0) || (this.shuffleCount > 0) || (this.exchangeCount > 0)) {
             return true;
         }
         return false;

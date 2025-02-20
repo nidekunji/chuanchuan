@@ -2,7 +2,7 @@
  * @Author: Aina
  * @Date: 2025-01-10 04:54:34
  * @LastEditors: Aina
- * @LastEditTime: 2025-02-13 22:34:45
+ * @LastEditTime: 2025-02-19 07:53:47
  * @FilePath: /chuanchuan/assets/game/scripts/CustomerComponent.ts
  * @Description: 
  * 
@@ -88,20 +88,9 @@ export class CustomerComponent extends Component {
         this.tableId = tableId;
         this.isWaiting = isWaiting;
         this.node.active = false;
-        let skinType = [1]
-        let level = LocalStorageManager.getItem(LocalCacheKeys.Level)
-        if (!level || level === '1') {
-            
-        } else {
-           let newLevel = Number(level)
-           if (newLevel >= 5 && newLevel <= 10) {
-            skinType = [1,2]
-           }  else if (newLevel >= 11) {
-            skinType = [1,2,3]
-           }
-        }
+    
         if (this.frameAnimation) {
-            this.frameAnimation.init(skinType);
+            this.frameAnimation.init(customerType);
         }
         if (isWaiting) {
             this.node.setPosition(waitingPositions[tableId]);

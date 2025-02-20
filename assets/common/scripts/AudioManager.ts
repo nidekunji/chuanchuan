@@ -38,6 +38,12 @@ export class AudioManager extends Component {
     onDestroy() {
         AudioManager._instance = null;
     }
+    public resumeBackgroundMusic() {
+        if (!this.backgroundMusicSource || !this.isBackgroundMusicEnabled()) return;
+        if (this.backgroundMusicSource.clip) {
+            this.backgroundMusicSource.play();
+        }
+    }
 
     public async playBackgroundMusic(clipName: string, loop: boolean = true, isJustPlay: boolean = true) {
         if (!this.backgroundMusicSource) return;

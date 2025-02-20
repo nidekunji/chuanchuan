@@ -2,7 +2,7 @@
  * @Author: Aina
  * @Date: 2025-02-17 16:12:53
  * @LastEditors: Aina
- * @LastEditTime: 2025-02-17 18:53:35
+ * @LastEditTime: 2025-02-19 06:46:16
  * @FilePath: /chuanchuan/assets/main/script/IconListUI.ts
  * @Description: 
  * 
@@ -10,7 +10,7 @@
  */
 import { _decorator, Component, instantiate, Label, Node, Prefab } from 'cc';
 import { LocalStorageManager } from '../../common/scripts/LocalStorageManager';
-import { getUnlockedCustomerLevel, iconList, LocalCacheKeys, uiLoadingConfigs } from '../../app/config/GameConfig';
+import { checkIsUnlockCustomer, iconList, LocalCacheKeys, uiLoadingConfigs } from '../../app/config/GameConfig';
 import { ResourceManager } from '../../common/scripts/ResourceManager';
 import { Icon } from './Icon';
 import { UIManager } from '../../common/scripts/UIManager';
@@ -25,25 +25,23 @@ export class IconListUI extends Component {
     totalLockNum: Label = null!;
     
 
-    private currentLevel: number = 1;
+    private currentUnlockCustomerNum: number = 1;
     private unLockNum: number = 0;
-    private totalNum: number = 50;
+    private totalNum: number = 7;
     private selectedIconNode: Node | null = null; // 添加跟踪选中icon的变量
     start() {
         this.init();
     }
     init () {
-        this.currentLevel = this.getCurrentLevel();
+        this.unLockNum = this.getCurrentUnlockCustomerNum();
         this.createIconList();
         this.totalLockNum.string = "客人(" + this.unLockNum +"" + "/" + this.totalNum.toString() +")";
     }
-    private getCurrentLevel(): number {
-       
-        let level = LocalStorageManager.getItem(LocalCacheKeys.Level)
-        return level ? parseInt(level) : 1;
+    private getCurrentUnlockCustomerNum(): number {
+        let total = LocalStorageManager.getItem(LocalCacheKeys.UnlockCustomerNum)
+        return total ? parseInt(total) : 1;
     }
     private async createIconList() {
-        this.unLockNum = getUnlockedCustomerLevel(this.currentLevel);
         
         for (let i = 1; i <= this.totalNum; i++) {
             let isUnlocked = i <= this.unLockNum;

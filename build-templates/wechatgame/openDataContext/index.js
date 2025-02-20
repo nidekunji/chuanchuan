@@ -295,7 +295,7 @@ function scroll(value) {
 
 let isScrollEnable = false;
 wx.onMessage((res) => {
-    console.log("onMessage", res);
+    console.log("onMessage", res, res.event);
     switch (res.event) {
         case 'level': {
             isScrollEnable = true;

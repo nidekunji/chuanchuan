@@ -2,7 +2,7 @@
  * @Author: Aina
  * @Date: 2025-01-03 21:37:19
  * @LastEditors: Aina
- * @LastEditTime: 2025-02-07 17:07:43
+ * @LastEditTime: 2025-02-19 07:54:35
  * @FilePath: /chuanchuan/assets/common/scripts/FrameAnimation.ts
  * @Description: 
  * 
@@ -30,17 +30,13 @@ export class FrameAnimation extends Component {
     onLoad() {
         this.sprite = this.getComponent(Sprite)!;
     }
-    init(types: number[], frameRate: number = 1, scaleX: number = 1) {
+    init(type: number, frameRate: number = 1, scaleX: number = 1) {
         if (frameRate !== undefined) {
             this._frameRate = frameRate;
         }
-      //  this.customerId = type;
+       this.customerId = type;
         // 
-        const randomIndex = Math.floor(Math.random() * types.length);
-        const selectedType = types[randomIndex];
-        
-        this.startFrameId = (selectedType - 1) * 2;
-        this.endFrameId = this.startFrameId + 1;
+        this.startFrameId = (this.customerId - 1) * 2;
         this.endFrameId = this.startFrameId + 1;
         let node = this.node; // 获取当前组件所在的节点
         if (node) {

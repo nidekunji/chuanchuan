@@ -2,17 +2,18 @@
  * @Author: Aina
  * @Date: 2025-01-05 16:41:56
  * @LastEditors: Aina
- * @LastEditTime: 2025-02-14 01:50:07
+ * @LastEditTime: 2025-02-19 07:29:27
  * @FilePath: /chuanchuan/assets/game/scripts/FailUI.ts
  * @Description: 
  * 
  * Copyright (c) 2025 by ${git_name_email}, All Rights Reserved. 
  */
 import { _decorator, assetManager, Component, director, Label, Node, UITransform } from 'cc';
-import { uiLoadingConfigs } from '../../app/config/GameConfig';
+import { checkIsUnlockCustomer, LocalCacheKeys, uiLoadingConfigs } from '../../app/config/GameConfig';
 import { UIManager } from '../../common/scripts/UIManager';
 import { EventDispatcher } from '../../common/scripts/EventDispatcher';
 import { GameBoard } from '../script/Test';
+import { LocalStorageManager } from '../../common/scripts/LocalStorageManager';
 const { ccclass, property } = _decorator;
 
 @ccclass('FailUI')
@@ -35,15 +36,41 @@ export class FailUI extends Component {
         }
     }
     start() {
-        this.updateScoreAndProgress();
+        this.init()
     }
-
-    update(deltaTime: number) {
-        
+    init () {
+        this.updateScoreAndProgress();
+        this.checkIsUnlockCustomer()
+        LocalStorageManager.removeItem(LocalCacheKeys.GameSave);
+        LocalStorageManager.removeItem(LocalCacheKeys.FoodStorage);
+        LocalStorageManager.removeItem(LocalCacheKeys.WaitingArea);
+        LocalStorageManager.removeItem(LocalCacheKeys.PropData);
+    }
+    checkIsUnlockCustomer() {
+        // 读取当前解锁的顾客数量
+        let origalNum = LocalStorageManager.getItem(LocalCacheKeys.UnlockCustomerNum)
+        let currentNum = 1
+        if (origalNum) {
+            currentNum = parseInt(origalNum)
+        }
+        // 读取游戏缓存中进入游戏的等级
+        let heistory = LocalStorageManager.getItem(LocalCacheKeys.GameSave)
+        let currentLevel = LocalStorageManager.getItem(LocalCacheKeys.Level)
+        if (heistory && currentLevel) {
+            let heistoryData = JSON.parse(heistory)
+            let Level = parseInt(currentLevel)
+            if (1) {//checkIsUnlockCustomer(heistoryData.originalLevel, Level)
+                this.showUnlockCustomer(currentNum+1)
+            }
+        }
+    }
+    showUnlockCustomer(newCustomerNum: number) {
+        // 显示解锁顾客
+        LocalStorageManager.setItem(LocalCacheKeys.UnlockCustomerNum, newCustomerNum.toString())
+        UIManager.instance.openUI(uiLoadingConfigs.UnLockCustomerUIUrl)
     }
     updateScoreAndProgress() {
         let sp = this.ratioNode.getComponent(UITransform)!
-        
        // console.log(Math.floor(this.GameBoard.getProgressFromProgressBar().currentScore / this.GameBoard.getProgressFromProgressBar().totalPossibleScore) * 321)
        let progress = this.GameBoard.getProgressFromProgressBar().currentScore / this.GameBoard.getProgressFromProgressBar().totalPossibleScore
        if (progress > 1) {

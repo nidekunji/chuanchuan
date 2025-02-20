@@ -2,7 +2,7 @@
  * @Author: Aina
  * @Date: 2024-12-19 01:17:40
  * @LastEditors: Aina
- * @LastEditTime: 2025-02-17 16:42:17
+ * @LastEditTime: 2025-02-19 06:29:30
  * @FilePath: /chuanchuan/assets/main/script/Main.ts
  * @Description: 
  * 
@@ -76,6 +76,7 @@ export class HomeButtonAnimation extends Component {
             LocalStorageManager.setItem(LocalCacheKeys.BackgroundMusic, 'true');
             LocalStorageManager.setItem(LocalCacheKeys.ShakeEffect, 'true');
             LocalStorageManager.setItem(LocalCacheKeys.SoundEffects, 'true');
+            LocalStorageManager.setItem(LocalCacheKeys.UnlockCustomerNum, '1');
         }
     }
     start() {

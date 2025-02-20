@@ -98,6 +98,11 @@ export const uiLoadingConfigs: { [key: string]: UILoadConfig } = {
         name: "IconListUI",
         bundle: "main2",
         path: "prefab/IconListUI"
+    },
+    UnLockCustomerUIUrl: {
+        name: "UnLockCustomerUI",
+        bundle: "game",
+        path: "prefab/UnLockCustomerUI"
     }
 };
 /**本地缓存字段名称 */
@@ -111,14 +116,20 @@ export const LocalCacheKeys = {
     FoodStorage: "foodStorage",//食物存放区
     WaitingArea: "waitingArea",//等待区
     PropData: "propData",//道具数据
+    UnlockCustomerNum: "unlockCustomerNum",//已解锁顾客的个数
     // Add more keys as needed
 }
 export const levelConfig: { [key: number]: number[][] } = {
     1: [
-        [4, 1, 1, 1],
-        [2, 4, 2, 2],
-        [4, 3, 3, 3]
+        [1, 2, 3, 1],
+        [3, 1, 2, 3],
+        [2, 3, 1, 2]
     ]
+    // 1: [
+    //     [4, 1, 1, 1],
+    //     [2, 4, 2, 2],
+    //     [4, 3, 3, 3]
+    // ]
 }
 export const NewUserGameConfig = {
     row: 9,//行
@@ -285,50 +296,7 @@ export const CustomerMoveConfig = {
         ]
     }
 }
-// export const CustomerMoveConfig = {
-//     speed: 100, // 顾客移动速度
-//     waypoints: {
-//         1: [
-//             new Vec3(-285, 24, 1),
-//             new Vec3(-192, 89, 1),
-//             new Vec3(-81, 143, 1),
-//             new Vec3(-5, 212, 1),
-//             new Vec3(-5, 500, 1)
-//         ],
-//         2: [
-//             new Vec3(-178, 24, 1),
-//             new Vec3(-97, 75, 1),
-//             new Vec3(-7, 163, 1),
-//             new Vec3(-1, 211, 1),
-//             new Vec3(-8, 500, 1)
-//         ],
-//         3: [
-//             new Vec3(-67, 24, 1),
-//             new Vec3(-15, 81, 1),
-//             new Vec3(-4, 155, 1),
-//             new Vec3(-8, 500, 1)
-//         ],       
-//         4: [
-//             new Vec3(42, 24, 1),
-//             new Vec3(5, 81, 1),
-//             new Vec3(-1, 155, 1),
-//             new Vec3(-8, 460, 1)
-//         ],
-//         5: [
-//             new Vec3(153, 24, 1),
-//             new Vec3(73, 81, 1),
-//             new Vec3(5, 155, 1),
-//             new Vec3(-8, 500, 1)
-//         ],
-//         6: [
-//             new Vec3(267, 24, 1),
-//             new Vec3(180, 81, 1),
-//             new Vec3(40, 155, 1),
-//             new Vec3(2, 212, 1),
-//             new Vec3(-8, 500, 1)
-//         ]
-//     }
-// }
+
 
 export const QueueMoveConfig = {
     speed: 100, // 顾客移动速度
@@ -396,9 +364,9 @@ export const CommonVedioUIConfig = {
     }
 }
 export const lockLevel = 5;
-export function getUnlockedCustomerLevel(level: number): number {
-    if (level < 5) return 1;
-    return Math.min(Math.floor((level - lockLevel) / lockLevel) + 2, 7);
+export function checkIsUnlockCustomer(originalLevel: number, currentLevel: number): boolean {
+    if (currentLevel < lockLevel) return false
+    return currentLevel - originalLevel >= lockLevel
 }
 
 export const iconList = {

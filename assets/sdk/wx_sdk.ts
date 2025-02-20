@@ -1,6 +1,7 @@
 import { isdk } from "./isdk";
 import { SDKDir, SDKShareParam, ShareType, ResultCallback, ResultState, DataCallback, SDKStyle, SDKUserButtonType } from "./sdk_define";
 import { SDKData } from "./sdk_data";
+import { AudioManager } from "../common/scripts/AudioManager";
 
 
 // const rewaredAd: string[] = ['adunit-e4dd374ce73ff1d8']
@@ -228,7 +229,9 @@ export class wx_sdk implements isdk {
     protected rewardAd: any[] = [];
     protected videoAdCallback: (result: number) => void = null;
     protected callVedioCallback(r: number) {
-      //  window['cc'].audioEngine.pauseMusic();
+        if (AudioManager.instance) {
+            AudioManager.instance.resumeBackgroundMusic()
+        }
         if (this.videoAdCallback) {
             if (window['cc'] && window['cc'].audioEngine) {
                 window['cc'].audioEngine.resumeAll();

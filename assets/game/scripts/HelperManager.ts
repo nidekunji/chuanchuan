@@ -22,7 +22,7 @@ export class HelperManager extends Component {
         this._gameBoard = gameBoard;
         this.fingerNode.active = false;
     }
-    public checkTips(): {from: {x: number, y: number}, to: {x: number, y: number}} | null {
+    public checkTips(): {from: {x: number, y: number}, to: {x: number, y: number}, type: number, requestNum: number} | null {
         // 首先检查是否有可以直接消除的位置
         for (let y = 0; y < this._gameBoard.boardParams.rows; y++) {
             for (let x = 0; x < this._gameBoard.boardParams.columns; x++) {
@@ -38,7 +38,9 @@ export class HelperManager extends Component {
                 if (this._gameBoard.checkPushWillMatch(moveResult) === 1) {
                     return {
                         from: {x: x, y: y},
-                        to: {x: x, y: y}
+                        to: {x: x, y: y},
+                        type: currentGem,
+                        requestNum: 1
                     };
                 }
             }
@@ -108,7 +110,7 @@ export class HelperManager extends Component {
   
                       moveResult.push({
                           from: { x: gem.x, y: gem.y },
-                          to: targetPos
+                          to: targetPos,
                       });
                   }
 
@@ -119,7 +121,9 @@ export class HelperManager extends Component {
                           to: { 
                               x: x + direction.dx * slots,
                               y: y - direction.dy * slots
-                          }
+                          },
+                          requestNum: requestNum,
+                          type: currentGem
                       };
                       return result;
                   }
@@ -142,7 +146,7 @@ public showTips(): Boolean {
     let result = this.checkTips();
 
     if (result) {
-        console.log("showTips", result);
+       // console.log("showTips", result);
         this.setPositionAndAnimate(result.from, result.to);
         return true;
     }

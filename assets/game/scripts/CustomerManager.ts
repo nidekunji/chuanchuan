@@ -27,8 +27,6 @@ export class CustomerManager extends Component {
     foodPrefab: Prefab = null;
 
     private isResetting: boolean = false;
-
-    private _GameBoard: GameBoard = null;
    
     private foodNodes: Node[] = []; 
      
@@ -40,12 +38,10 @@ export class CustomerManager extends Component {
     private customersToServeByType: { [type: number]: number } = {}; // 按类型记录需要服务的顾客数量-等待区
     private nodePool: NodePool; // 对象池
 
-    private readonly TOTAL_SLOTS = 6;        // 总格子数
     private readonly INITIAL_WAITING_COUNT = 3;   // 初始解锁数
-    
-    // 存放区数据：固定6个位置的数组
-    private storageSlots: StorageSlot[] = [];
 
+    private customerTypes: number = 1; // 顾客类型
+    
     private clearAllGameElements() {
         // 标记正在重置
         this.isResetting = true;
@@ -90,12 +86,12 @@ export class CustomerManager extends Component {
      */
     init(gameBoard: GameBoard, gemGroupCountMap: { [key: number]: number }, nodePool: NodePool) {
        this.clearAllGameElements();
+       this.customerTypes = Number(LocalStorageManager.getItem(LocalCacheKeys.UnlockCustomerNum))
         this.nodePool = nodePool;
         if (this.nodePool) {
             this.nodePool.initializePool(this.customerPrefab); // 初始化池
             this.nodePool.initializePool(this.foodPrefab); // 初始化池
         }
-        this._GameBoard = gameBoard;
         this.gemGroupCountMap = gemGroupCountMap;
         
          this.addStorageItem();
@@ -223,7 +219,8 @@ export class CustomerManager extends Component {
      * @returns 
      */
     
-    createCustomer(isWaiting: boolean, customerType: number, index?: number) {
+    createCustomer(isWaiting: boolean, customerType: number, index: number) {
+        customerType = Math.floor(Math.random() * Math.min(this.customerTypes, 7)) + 1;
         if (this.isResetting) {
             console.log('系统正在重置中，跳过创建顾客');
             return;
