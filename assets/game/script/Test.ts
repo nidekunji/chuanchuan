@@ -2504,7 +2504,7 @@ private resetHighlightState() {
         
     }
     private checkGameover(): Boolean {
-        console.error("checkGameover",this.propManager, this.helperManager, this.customerManager, this.foodStorageManager);
+        
         if (!this.propManager || !this.helperManager || !this.customerManager || !this.foodStorageManager) {
             return false;
         }

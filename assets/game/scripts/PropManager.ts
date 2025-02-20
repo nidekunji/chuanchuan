@@ -2,13 +2,13 @@
  * @Author: Aina
  * @Date: 2025-01-16 02:50:55
  * @LastEditors: Aina
- * @LastEditTime: 2025-02-21 01:07:36
+ * @LastEditTime: 2025-02-21 03:01:41
  * @FilePath: /chuanchuan/assets/game/scripts/PropManager.ts
  * @Description: 
  * 
  * Copyright (c) 2025 by ${git_name_email}, All Rights Reserved. 
  */
-import { _decorator, Color, Component, Label, Sprite } from 'cc';
+import { _decorator, Color, Component, Label, Sprite, tween, UITransform, Vec3 } from 'cc';
 import { GameBoard } from '../script/Test';
 import { ResourceManager } from '../../common/scripts/ResourceManager';
 import { LocalCacheKeys } from '../../app/config/GameConfig';
@@ -44,7 +44,11 @@ export class PropManager extends Component {
     private readonly MAX_SHUFFLE_USAGE = 0;
     private readonly MAX_EXCHANGE_USAGE = 0;
 
+    @property(Sprite)
+    private propAnimIcon: Sprite = null;  // 道具动画图标
+
     public init(gameBoard: GameBoard) {
+        this.propAnimIcon.node.active = false;
         this._gameBoard = gameBoard;
         this.loadFromStorage();
         this.updateView();
@@ -75,19 +79,23 @@ export class PropManager extends Component {
         localStorage.setItem(LocalCacheKeys.PropData, JSON.stringify(data));
     }
 
-    public addHintProps() {
+       // 修改现有的添加道具方法
+    public async addHintProps() {
+        await this.playPropAnimation("提示", this.hintButton);
         this.hintCount += 3;
         this.saveToStorage();
         this.updateView();
     }
 
-    public addShuffleProps() {
+    public async addShuffleProps() {
+        await this.playPropAnimation("打乱", this.shuffleButton);
         this.shuffleCount += 3;
         this.saveToStorage();
         this.updateView();
     }
 
-    public addExchangeProps() {
+    public async addExchangeProps() {
+        await this.playPropAnimation("换位置", this.exchangeButton);
         this.exchangeCount += 3;
         this.saveToStorage();
         this.updateView();
@@ -133,6 +141,7 @@ export class PropManager extends Component {
     }
 
     public resetProps() {
+        this.propAnimIcon.node.active = false;
         this.hintCount = 0;
         this.shuffleCount = 0;
         this.exchangeCount = 0;
@@ -235,4 +244,79 @@ export class PropManager extends Component {
         }
         return false;
     }
+    private propType = {
+        hint: "提示",
+        shuffle: "打乱",
+        exchange: "换位置"
+    }
+    private updatePropAnimIconSprite(propType: string) {
+        const bundleName = 'game';
+        const path = `res/game/${propType}/spriteFrame`;
+        ResourceManager.loadSpriteFrameFromBundle(bundleName, path, (err, spriteFrame) => {
+            if (err) {
+                console.error('Error loading texture:', err);
+            } else {
+                this.propAnimIcon.spriteFrame = spriteFrame;
+                this.propAnimIcon.node.active = true;
+                this.propAnimIcon.node.setPosition(0, -140);
+                this.propAnimIcon.node.scale = new Vec3(0.2, 0.2, 1);
+            }
+        });
+    }
+    /**
+     * 播放道具动画
+     * @param propType 道具类型 1 提示 2 打乱 3 换位置
+     * @param targetButton 目标按钮
+     * @returns 
+     */
+    private async playPropAnimation(propType: string, targetButton: Sprite) {
+        // 确保动画图标存在
+        if (!this.propAnimIcon) return;
+        // 加载对应道具的图标
+        await this.updatePropAnimIconSprite(propType);
+
+        // 晃动动画
+        const shakeAction = new Promise<void>((resolve) => {
+            const duration = 0.8;
+            const angle = 30;
+            tween(this.propAnimIcon.node)
+                .by(duration / 4, { angle: angle })
+                .by(duration / 2, { angle: -2 * angle })
+                .by(duration / 4, { angle: angle })
+                .call(() => resolve())
+                .start();
+        });
+
+        await shakeAction;
+        
+        
+        // 飞向目标按钮的动画
+        const worldPos = targetButton.node.getWorldPosition();
+        const targetPos = this.propAnimIcon.node.parent.getComponent(UITransform).convertToNodeSpaceAR(worldPos);
+
+        const flyAction = new Promise<void>((resolve) => {
+            tween(this.propAnimIcon.node)
+            .to(0.5, { position: new Vec3(targetPos.x, targetPos.y, 0)})
+                .call(() => {
+                    this.propAnimIcon.node.active = false;
+                    resolve();
+                })
+                .start();
+        });
+
+        await flyAction;
+
+        // 目标按钮的放大缩小动画
+        const buttonAnimation = new Promise<void>((resolve) => {
+            tween(targetButton.node)
+                .to(0.2, { scale: new Vec3(0.8, 0.8, 1)})
+                .to(0.2, { scale: new Vec3(0.6, 0.6, 1) })
+                .call(() => resolve())
+                .start();
+        });
+
+        await buttonAnimation;
+        this._gameBoard.tipUI.showTips("获得新道具");    
+    }
+    
 }

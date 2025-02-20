@@ -15,6 +15,8 @@ export class HelperManager extends Component {
     @property(Node)
     private particleNode: Node = null;
 
+    
+
     // 添加成员变量来存储宝石副本
     private gemCopies: Node[] = [];
 
